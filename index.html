@@ -84,16 +84,23 @@ main{margin-left:0;padding:20px 14px 60px}
 .f{min-width:100%}
 .row .btn{width:100%}
 }
+
+.lg-wrap{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:16px;background:radial-gradient(420px 420px at 100% 0,#ffe3ec 0,transparent 70%),radial-gradient(400px 400px at 0 100%,#dff0ff 0,transparent 70%),#fbfcff}
+.lg-card{width:100%;max-width:380px;background:#fff;border-radius:26px;padding:32px;box-shadow:0 8px 40px rgba(90,110,150,.14)}
+.lg-logo{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#ffb8cf,#a9d6ff);margin-bottom:14px}
+.lg-card .f{margin-bottom:14px}
+.lerr{color:var(--exp);min-height:20px;font-size:13px;margin:4px 0 10px}
 </style>
 </head>
 <body>
 <aside class="side" id="side">
   <div class="brand" id="brand" onclick="shopForm()"></div>
   <nav class="nav" id="nav"></nav>
-  <div class="nav set"><button onclick="shopForm()">ตั้งค่าร้าน</button></div>
+  <div class="nav set"><button onclick="shopForm()">ตั้งค่าร้าน</button><button onclick="logout()">ออกจากระบบ</button></div>
 </aside>
 <div class="top"><b id="topTitle">Dashboard ภาพรวม</b><button class="btn o s" onclick="toggleSide()">เมนู</button></div>
 <main id="main"></main>
+<div id="login" class="lg-wrap"><div class="lg-card"><div class="lg-logo"></div><h1 style="font-size:22px">เข้าสู่ระบบ</h1><p class="sub" style="margin-bottom:20px">สำหรับผู้ดูแลระบบ</p><div class="f"><label>อีเมล</label><input id="le" type="email" autocomplete="username"></div><div class="f"><label>รหัสผ่าน</label><input id="lp" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div><p id="lerr" class="lerr"></p><button id="lb" class="btn" style="width:100%" onclick="doLogin()">เข้าสู่ระบบ</button></div></div>
 <div id="toast"></div>
 <div id="modalRoot"></div>
 
@@ -120,14 +127,46 @@ var S;
 var SB={url:'https://vwgysbjieksxkramurfp.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3Z3lzYmppZWtzeGtyYW11cmZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4MDIwNzMsImV4cCI6MjExMDM3ODA3M30.c5WRrjgYDYXW7TvsAG-_gW-DKXuMOBf6zSbWs69HxgI',owner:'fadf6bf6-37d3-45f8-b5ba-7ed0733d1de9'};
 function fixS(){if(!S.shop)S.shop={name:'',logo:''}}
 function cache(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-function fail(e){console.error(e);toast('ดำเนินการไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตและการตั้งค่า Supabase')}
+function fail(e){if(e&&e.message==='NOAUTH')return;console.error(e);toast('ดำเนินการไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตและการตั้งค่า Supabase')}
+var SES=null,SESKEY='ie_session_v1';
+function loadSes(){try{SES=JSON.parse(localStorage.getItem(SESKEY)||'null')}catch(e){SES=null}}
+function saveSes(d){SES={access_token:d.access_token,refresh_token:d.refresh_token,exp:Math.floor(Date.now()/1000)+(d.expires_in||3600)};try{localStorage.setItem(SESKEY,JSON.stringify(SES))}catch(e){}}
+function auth(path,body){
+  return fetch(SB.url+'/auth/v1/'+path,{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){
+    return r.json().then(function(j){if(!r.ok)throw new Error(j.error_description||j.msg||j.message||String(r.status));return j});
+  });
+}
+function token(){
+  if(!SES)return Promise.reject(new Error('NOAUTH'));
+  if(SES.exp-Math.floor(Date.now()/1000)>60)return Promise.resolve(SES.access_token);
+  return auth('token?grant_type=refresh_token',{refresh_token:SES.refresh_token}).then(function(d){saveSes(d);return SES.access_token}).catch(function(){logout(true);throw new Error('NOAUTH')});
+}
 function api(method,path,body,hdr){
-  var h={apikey:SB.key,Authorization:'Bearer '+SB.key,'Content-Type':'application/json',Prefer:'return=minimal'};
-  if(hdr)for(var k in hdr)h[k]=hdr[k];
-  return fetch(SB.url+'/rest/v1/'+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined}).then(function(r){
+  return token().then(function(t){
+    var h={apikey:SB.key,Authorization:'Bearer '+t,'Content-Type':'application/json',Prefer:'return=minimal'};
+    if(hdr)for(var k in hdr)h[k]=hdr[k];
+    return fetch(SB.url+'/rest/v1/'+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined});
+  }).then(function(r){
+    if(r.status===401){logout(true);throw new Error('NOAUTH')}
     if(!r.ok)return r.text().then(function(t){throw new Error(r.status+' '+t)});
     return r.text().then(function(t){return t?JSON.parse(t):null});
   });
+}
+function showLogin(msg){$('login').style.display='flex';$('lerr').textContent=msg||'';setTimeout(function(){$('le').focus()},50)}
+function doLogin(){
+  var em=$('le').value.trim(),pw=$('lp').value;
+  if(!em||!pw){$('lerr').textContent='กรุณากรอกอีเมลและรหัสผ่าน';return}
+  $('lb').disabled=true;$('lerr').textContent='';
+  auth('token?grant_type=password',{email:em,password:pw}).then(function(d){
+    if(!d.user||d.user.id!==SB.owner)throw new Error('บัญชีนี้ไม่มีสิทธิ์เข้าใช้งาน');
+    saveSes(d);$('login').style.display='none';$('lp').value='';startApp();
+  }).catch(function(e){$('lerr').textContent=e.message==='Invalid login credentials'?'อีเมลหรือรหัสผ่านไม่ถูกต้อง':e.message}).then(function(){$('lb').disabled=false});
+}
+function logout(silent){
+  SES=null;try{localStorage.removeItem(SESKEY);localStorage.removeItem(KEY)}catch(e){}
+  S={shop:{name:'',logo:''},acc:[],tx:[]};
+  $('side').classList.remove('open');closeM();
+  showLogin(silent===true?'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่':'');
 }
 function getAll(path){
   var out=[];
@@ -147,11 +186,12 @@ function pull(){
     cache();
   });
 }
-function init(){
+function init(){loadSes();if(!SES){showLogin();return}startApp()}
+function startApp(){
   S={shop:{name:'',logo:''},acc:[],tx:[]};
   try{var r=localStorage.getItem(KEY);if(r){S=JSON.parse(r);fixS()}}catch(e){}
-  render();
-  pull().then(function(){if(view!=='form'&&!$('modalRoot').innerHTML)render();else drawBrand()}).catch(function(e){console.error(e);toast('เชื่อมต่อ Supabase ไม่สำเร็จ กำลังแสดงข้อมูลที่เก็บไว้ในเครื่อง')});
+  view='dash';render();
+  pull().then(function(){if(view!=='form'&&!$('modalRoot').innerHTML)render();else drawBrand()}).catch(function(e){if(e&&e.message==='NOAUTH')return;console.error(e);toast('เชื่อมต่อ Supabase ไม่สำเร็จ กำลังแสดงข้อมูลที่เก็บไว้ในเครื่อง')});
 }
 function sum(list){var i=0,e=0;list.forEach(function(t){if(t.type==='inc')i+=+t.amt;else e+=+t.amt});return{inc:i,exp:e,net:i-e}}
 function accBal(a){var s=sum(S.tx.filter(function(t){return t.acc===a.id}));return{inc:s.inc,exp:s.exp,bal:(+a.open||0)+s.net}}
