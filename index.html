@@ -130,6 +130,9 @@ function toast(m){var t=$('toast');t.textContent=m;t.style.display='block';clear
 /* ---------- ข้อมูล ---------- */
 var S;
 var SB={url:'https://vwgysbjieksxkramurfp.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3Z3lzYmppZWtzeGtyYW11cmZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4MDIwNzMsImV4cCI6MjExMDM3ODA3M30.c5WRrjgYDYXW7TvsAG-_gW-DKXuMOBf6zSbWs69HxgI',owner:'fadf6bf6-37d3-45f8-b5ba-7ed0733d1de9'};
+var hasTime=false;
+function txCmp(a,b){return b.date.localeCompare(a.date)||(b.time||'').localeCompare(a.time||'')}
+function nowHM(){var d=new Date();return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
 var DEF_INC=INCC.slice(),DEF_EXP=EXPC.slice();
 function applyCats(){var c=S&&S.cats;INCC=(c&&c.inc&&c.inc.length)?c.inc.slice():DEF_INC.slice();EXPC=(c&&c.exp&&c.exp.length)?c.exp.slice():DEF_EXP.slice()}
 function allCats(){var a=INCC.concat(EXPC);S.tx.forEach(function(t){if(t.cat&&a.indexOf(t.cat)<0)a.push(t.cat)});return a}
@@ -182,12 +185,12 @@ function getAll(path){
   return pg(0);
 }
 function fromAcc(r){return{id:r.id,ch:r.channel,name:r.name,open:Number(r.opening_balance)}}
-function fromTx(r){return{id:r.id,date:r.tx_date,type:r.type,name:r.name,cat:r.category,amt:Number(r.amount),note:r.note||'',ch:r.channel,acc:r.account_id,hasImg:!!r.has_image}}
+function fromTx(r){return{id:r.id,date:r.tx_date,type:r.type,name:r.name,cat:r.category,amt:Number(r.amount),note:r.note||'',ch:r.channel,acc:r.account_id,hasImg:!!r.has_image,time:(r.tx_time||'').slice(0,5)}}
 function pull(){
   return Promise.all([
     api('GET','shop_settings?select=name,logo'),
     getAll('accounts?select=*&order=created_at.asc,id.asc'),
-    getAll('transactions?select=id,tx_date,type,name,category,amount,note,channel,account_id,has_image&order=tx_date.desc,created_at.desc,id.asc'),
+    getAll('transactions?select=id,tx_date,tx_time,type,name,category,amount,note,channel,account_id,has_image&order=tx_date.desc,created_at.desc,id.asc').then(function(x){hasTime=true;return x}).catch(function(e){if(e&&e.message==='NOAUTH')throw e;hasTime=false;return getAll('transactions?select=id,tx_date,type,name,category,amount,note,channel,account_id,has_image&order=tx_date.desc,created_at.desc,id.asc')}),
     api('GET','shop_settings?select=categories').catch(function(){return null})
   ]).then(function(r){
     var sh=(r[0]&&r[0][0])||{};
@@ -416,13 +419,13 @@ function rDash(){
 
 /* ---------- หน้าระบบแต่ละช่องทาง ---------- */
 function txRow(t,showCh){
-  return '<tr><td>'+dth(t.date)+'</td><td>'+esc(t.name)+'</td><td>'+esc(t.cat)+'</td><td><span class="tag '+(t.type==='inc'?'i':'e')+'">'+(t.type==='inc'?'รายรับ':'รายจ่าย')+'</span></td><td class="r '+(t.type==='inc'?'inc':'exp')+'">'+money(t.amt)+'</td>'+
+  return '<tr><td>'+dth(t.date)+(t.time?'<br><span style="color:var(--mute);font-size:13px">'+t.time+' น.</span>':'')+'</td><td>'+esc(t.name)+'</td><td>'+esc(t.cat)+'</td><td><span class="tag '+(t.type==='inc'?'i':'e')+'">'+(t.type==='inc'?'รายรับ':'รายจ่าย')+'</span></td><td class="r '+(t.type==='inc'?'inc':'exp')+'">'+money(t.amt)+'</td>'+
   '<td>'+(showCh?CH[t.ch]+'<br>':'')+'<span style="color:var(--mute);font-size:13px">'+esc(accName(t.acc))+'</span></td>'+
   '<td>'+esc(t.note)+(t.hasImg?'<br><button class="btn o s" style="margin-top:6px" onclick="viewImg(\''+t.id+'\')">ดูรูป</button>':'')+'</td>'+
   '<td style="white-space:nowrap"><button class="btn o s" onclick="go(\'form\',\''+t.id+'\')">แก้ไข</button> <button class="btn d s" onclick="delTx(\''+t.id+'\')">ลบ</button></td></tr>';
 }
 function rChan(ch){
-  var L=S.tx.filter(function(t){return t.ch===ch}).sort(function(a,b){return b.date.localeCompare(a.date)});
+  var L=S.tx.filter(function(t){return t.ch===ch}).sort(txCmp);
   var s=sum(L);
   var accs=S.acc.filter(function(a){return a.ch===ch});
   var ar=accs.map(function(a){var b=accBal(a);return '<tr><td>'+esc(a.name)+'</td><td class="r">'+money(a.open)+'</td><td class="r inc">'+money(b.inc)+'</td><td class="r exp">'+money(b.exp)+'</td><td class="r"><b>'+money(b.bal)+'</b></td><td style="white-space:nowrap"><button class="btn o s" onclick="accForm(\''+a.id+'\')">แก้ไข</button> <button class="btn d s" onclick="delAcc(\''+a.id+'\')">ลบ</button></td></tr>'}).join('')||'<tr><td colspan="6" class="empty">ยังไม่มีบัญชี กรุณาเพิ่มบัญชีรับเงิน</td></tr>';
@@ -464,10 +467,11 @@ function delTx(id){
 function rForm(){
   var t=editId?S.tx.find(function(x){return x.id===editId}):null;
   if(editId&&!t){editId=null}
-  var v=t||{date:today(),type:'exp',name:'',cat:'',amt:'',note:'',ch:preset,acc:''};
+  var v=t||{date:today(),time:'',type:'exp',name:'',cat:'',amt:'',note:'',ch:preset,acc:''};
   $('main').innerHTML='<h1>'+(t?'แก้ไขรายการ':'บันทึกรายรับ-รายจ่าย')+'</h1><p class="sub">กรอกข้อมูลรายการทางการเงิน รายการจะแสดงในระบบของช่องทางที่เลือกเท่านั้น</p>'+(t?'':SCANBOX)+
   '<div class="box" style="max-width:720px"><div class="two">'+
   '<div class="f"><label>วันที่ทำรายการ</label><input id="fd" type="date" value="'+v.date+'"></div>'+
+  '<div class="f"><label>เวลาทำรายการ (อ่านจากสลิปอัตโนมัติ)</label><input id="ftime" type="time" value="'+(v.time||'')+'"></div>'+
   '<div class="f"><label>ประเภทรายการ</label><select id="ft" onchange="fillCat()"><option value="inc"'+(v.type==='inc'?' selected':'')+'>รายรับ</option><option value="exp"'+(v.type==='exp'?' selected':'')+'>รายจ่าย</option></select></div>'+
   '<div class="f"><label>ช่องทางธุรกิจ</label><select id="fc" onchange="fillAcc()"><option value="chat"'+(v.ch==='chat'?' selected':'')+'>ขายผ่านแชท</option><option value="web"'+(v.ch==='web'?' selected':'')+'>ขายผ่านเว็บไซต์</option></select></div>'+
   '<div class="f"><label>บัญชีที่เกี่ยวข้อง</label><select id="fa"></select></div>'+
@@ -508,12 +512,13 @@ function pickImg(inp){
   r.readAsDataURL(f);
 }
 function saveTx(){
-  var o={date:$('fd').value,type:$('ft').value,ch:$('fc').value,acc:$('fa').value,name:$('fn').value.trim(),cat:$('fg').value,amt:parseFloat($('fm').value),note:$('fo').value.trim()};
+  var o={date:$('fd').value,time:$('ftime').value||'',type:$('ft').value,ch:$('fc').value,acc:$('fa').value,name:$('fn').value.trim(),cat:$('fg').value,amt:parseFloat($('fm').value),note:$('fo').value.trim()};
   if(!o.date){toast('กรุณาเลือกวันที่');return}
   if(!o.name){toast('กรุณากรอกชื่อรายการ');return}
   if(!o.acc){toast('กรุณาเลือกบัญชี หากไม่มีให้เพิ่มบัญชีก่อน');return}
   if(!(o.amt>0)){toast('กรุณากรอกจำนวนเงินมากกว่า 0');return}
   var row={tx_date:o.date,type:o.type,name:o.name,category:o.cat,amount:o.amt,note:o.note,channel:o.ch,account_id:o.acc};
+  if(hasTime)row.tx_time=o.time||null;
   var wasEdit=editId,img=formImg,touched=imgTouched,p;
   var tid=wasEdit||uid();if(!wasEdit){o.id=tid;row.id=tid}
   var up=(touched||!wasEdit)&&img?putImg(tid,img):Promise.resolve('');
@@ -523,7 +528,7 @@ function saveTx(){
   });
   p.then(function(){
     if(wasEdit){var t=S.tx.find(function(x){return x.id===wasEdit});Object.assign(t,o);if(touched)t.hasImg=!!img}
-    else{o.hasImg=!!img;S.tx.push(o)}
+    else{o.hasImg=!!img;S.tx.unshift(o)}
     cache();toast(wasEdit?'แก้ไขรายการแล้ว':'บันทึกรายการแล้ว');editId=null;formImg='';imgTouched=false;preset=o.ch;go('hist');
   }).catch(fail);
 }
@@ -546,7 +551,7 @@ function say(t){var m=$('scanMsg');if(m)m.textContent=t}
 function useAmt(v){if($('fm'))$('fm').value=v}
 function parseSlip(t){
   var lines=t.split(/\n+/).map(function(x){return x.replace(/\s+/g,' ').trim()}).filter(Boolean);
-  var out={amount:0,alts:[],date:'',memo:''};
+  var out={amount:0,alts:[],date:'',time:'',memo:''};
   /* ยอดเงิน */
   var numRe=/(?<![\d.,])(\d{1,3}(?:,\d{3})+|\d+)\.\d{2}(?![\d.])/g;
   var kw=/จำนวน|amount|ยอด|บาท|thb/i,fee=/ค่าธรรมเนียม|fee/i,c=[];
@@ -579,6 +584,17 @@ function parseSlip(t){
     var n2=parseInt(m[3],10),y2=n2>=2400?n2-543:(n2<100?(n2>=57?2500+n2-543:2000+n2):n2);
     out.date=mk(m[1],parseInt(m[2],10),y2);
   }
+  /* เวลา */
+  var mt=/(?<![\d.:])([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?(?!\d)\s*(am|pm)?/i.exec(full)||/(?<![\d.])([01]?\d|2[0-3])\.([0-5]\d)\s*น/.exec(full);
+  if(!mt){
+    var dre=/\d{1,2}\s*[\/\-.]\s*\d{1,2}\s*[\/\-.]\s*\d{2,4}|\d{1,2}\s*[ก-๙.]{2,8}\s*\d{2,4}|\d{1,2}\s+[A-Za-z]{3,9}\.?\s+\d{2,4}/;
+    for(var li=0;li<lines.length&&!mt;li++){
+      if(!dre.test(lines[li]))continue;
+      var rest=lines[li].replace(dre,' ');
+      mt=/(?<![\d])([01]?\d|2[0-3])\s*[:;.]\s*([0-5]\d)(?!\d)/.exec(rest);
+    }
+  }
+  if(mt){var hh=+mt[1];if(mt[3]&&/pm/i.test(mt[3])&&hh<12)hh+=12;if(mt[3]&&/am/i.test(mt[3])&&hh===12)hh=0;out.time=(hh<10?'0':'')+hh+':'+mt[2]}
   /* โน้ต / บันทึกช่วยจำ */
   var lab=/(บันทึกช่วยจำ|บันทึก|ข้อความ|memo|note|หมายเหตุ|โน้ต)\s*[:：]?\s*(.*)$/i;
   var stop=/จาก|ไปยัง|ถึง|from|จำนวน|ค่าธรรมเนียม|fee|amount|รหัส|เลขที่|ref|บาท|\d{1,2}:\d{2}/i;
@@ -598,9 +614,11 @@ function applySlip(p){
   var got=[],h='';
   if(p.amount){$('fm').value=p.amount;got.push('ยอดเงิน '+money(p.amount)+' บาท')}
   if(p.date){$('fd').value=p.date;got.push('วันที่ '+dth(p.date))}
+  if($('ftime')){$('ftime').value=p.time||'';if(p.time)got.push('เวลา '+p.time+' น.')}
   if(p.memo){$('fn').value=p.memo;got.push('โน้ต "'+p.memo+'"')}
   h+=got.length?'<b style="color:var(--dark)">อ่านได้:</b> '+esc(got.join(' | '))+'<br>':'อ่านข้อมูลจากสลิปไม่ได้<br>';
   if(!p.amount)h+='<span class="exp">ไม่พบยอดเงิน กรุณากรอกเอง</span><br>';
+  if(!p.time)h+='<span class="exp">ไม่พบเวลาในสลิป รายการนี้จะเรียงไว้ท้ายสุดของวัน หากต้องการให้เรียงถูกต้อง กรอกเวลาเอง</span><br>';
   if(!p.memo)h+='<span class="exp">สลิปนี้ไม่มีโน้ต กรุณากรอกชื่อรายการเอง</span><br>';
   if(p.alts.length)h+='ตัวเลขอื่นที่พบ (กดเพื่อใช้แทนยอดเงิน): '+p.alts.map(function(v){return '<button class="btn o s" type="button" onclick="useAmt('+v+')">'+money(v)+'</button>'}).join('')+'<br>';
   h+='แนบรูปสลิปไว้แล้ว กรุณาตรวจสอบข้อมูลก่อนบันทึก และเลือกประเภท ช่องทาง บัญชี หมวดหมู่เอง';
@@ -648,7 +666,7 @@ function histList(){
   var q=H.q.toLowerCase();
   return S.tx.filter(function(t){
     return(!q||(t.name+' '+t.note+' '+t.cat).toLowerCase().indexOf(q)>-1)&&(!H.from||t.date>=H.from)&&(!H.to||t.date<=H.to)&&(!H.type||t.type===H.type)&&(!H.cat||t.cat===H.cat)&&(!H.ch||t.ch===H.ch);
-  }).sort(function(a,b){return b.date.localeCompare(a.date)||b.id.localeCompare(a.id)});
+  }).sort(txCmp);
 }
 function setH(k,v){H[k]=v;drawHist()}
 function drawHist(){
@@ -675,7 +693,7 @@ function rHist(){
 /* ---------- ส่งออก ---------- */
 function setE(k,v){E[k]=v;drawExp()}
 function expRows(){
-  return S.tx.filter(function(t){return(E.ch==='all'||t.ch===E.ch)&&(!E.from||t.date>=E.from)&&(!E.to||t.date<=E.to)}).sort(function(a,b){return a.date.localeCompare(b.date)});
+  return S.tx.filter(function(t){return(E.ch==='all'||t.ch===E.ch)&&(!E.from||t.date>=E.from)&&(!E.to||t.date<=E.to)}).reverse().sort(function(a,b){return a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||'')});
 }
 function expInfo(){
   var chn=E.ch==='all'?'ภาพรวมทั้งสองระบบ':'ระบบ'+CH[E.ch];
@@ -705,7 +723,7 @@ function expPDF(){
   var L=expRows();if(!L.length){toast('ไม่มีรายการให้ส่งออกในตัวกรองที่เลือก');return}
   var s=sum(L),i=expInfo();
   var gs=groupSum(L).map(function(g){return '<tr><td>'+g[0]+'</td><td class="r">'+money(g[1])+'</td><td class="r">'+money(g[2])+'</td><td class="r">'+money(g[3])+'</td></tr>'}).join('');
-  var rows=L.map(function(t,n){return '<tr><td>'+(n+1)+'</td><td>'+dth(t.date)+'</td><td>'+esc(t.name)+'</td><td>'+esc(t.cat)+'</td><td>'+(t.type==='inc'?'รายรับ':'รายจ่าย')+'</td><td class="r">'+money(t.amt)+'</td><td>'+CH[t.ch]+'<br>'+esc(accName(t.acc))+'</td><td>'+esc(t.note)+'</td></tr>'}).join('');
+  var rows=L.map(function(t,n){return '<tr><td>'+(n+1)+'</td><td>'+dth(t.date)+(t.time?' '+t.time:'')+'</td><td>'+esc(t.name)+'</td><td>'+esc(t.cat)+'</td><td>'+(t.type==='inc'?'รายรับ':'รายจ่าย')+'</td><td class="r">'+money(t.amt)+'</td><td>'+CH[t.ch]+'<br>'+esc(accName(t.acc))+'</td><td>'+esc(t.note)+'</td></tr>'}).join('');
   var h='<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>รายงานรายรับ-รายจ่าย</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet"><style>body{font-family:Sarabun,Tahoma,sans-serif;color:#111;font-size:12px;margin:24px}h1{font-size:20px;margin:0 0 4px}p{margin:2px 0;color:#444}table{width:100%;border-collapse:collapse;margin:14px 0}th,td{border:1px solid #ccc;padding:5px 7px;text-align:left;vertical-align:top}th{background:#f1f1f1}.r{text-align:right}h2{font-size:14px;margin:18px 0 0}.t td{font-weight:600;background:#fafafa}@page{margin:14mm}</style></head><body>'+
   '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'+(S.shop.logo?'<img src="'+S.shop.logo+'" style="height:52px">':'')+'<div>'+(S.shop.name?'<b style="font-size:16px">'+esc(S.shop.name)+'</b>':'')+'<h1>รายงานรายรับ-รายจ่าย</h1></div></div><p>ขอบเขตข้อมูล: '+i.chn+'</p><p>ช่วงเวลา: '+i.per+'</p><p>วันที่ออกเอกสาร: '+i.now+'</p>'+
   '<h2>สรุปยอด</h2><table><thead><tr><th>รายการสรุป</th><th class="r">รายรับ</th><th class="r">รายจ่าย</th><th class="r">สุทธิ</th></tr></thead><tbody>'+gs+'<tr class="t"><td>รวม</td><td class="r">'+money(s.inc)+'</td><td class="r">'+money(s.exp)+'</td><td class="r">'+money(s.net)+'</td></tr></tbody></table>'+
@@ -722,7 +740,7 @@ function expXLS(){
   groupSum(L).forEach(function(g){a.push(g)});
   a.push(['รวม',s.inc,s.exp,s.net]);
   var b=[['วันที่','รายการ','หมวดหมู่','ประเภท','จำนวนเงิน','ช่องทาง','บัญชี','หมายเหตุ']];
-  L.forEach(function(t){b.push([dth(t.date),t.name,t.cat,t.type==='inc'?'รายรับ':'รายจ่าย',+t.amt,CH[t.ch],accName(t.acc),t.note])});
+  L.forEach(function(t){b.push([dth(t.date)+(t.time?' '+t.time:''),t.name,t.cat,t.type==='inc'?'รายรับ':'รายจ่าย',+t.amt,CH[t.ch],accName(t.acc),t.note])});
   var w1=XLSX.utils.aoa_to_sheet(a),w2=XLSX.utils.aoa_to_sheet(b);
   w1['!cols']=[{wch:28},{wch:26},{wch:16},{wch:16}];
   w2['!cols']=[{wch:12},{wch:30},{wch:30},{wch:10},{wch:14},{wch:18},{wch:28},{wch:30}];
