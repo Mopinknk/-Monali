@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ระบบบันทึกรายรับ-รายจ่าย</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#fbfcff;--card:#fff;--line:#eef0f7;--text:#4a3f44;--mute:#9a8c92;--dark:#3b2f35;--rose:#d9617f;--rose2:#c24d6c;--soft:#e6f3ff;--inc:#2f86c6;--exp:#d9567a}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:'Sarabun','Noto Sans Thai',Tahoma,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(420px 420px at 100% 0,#ffe3ec 0,transparent 70%),radial-gradient(400px 400px at 0 100%,#dff0ff 0,transparent 70%),radial-gradient(300px 300px at 85% 95%,#e8f4ff 0,transparent 70%)}
+.side{position:fixed;left:14px;top:14px;bottom:14px;width:226px;background:var(--card);border-radius:24px;box-shadow:0 4px 24px rgba(90,110,150,.08);padding:28px 14px;z-index:20;overflow-y:auto}
+.brand{font-family:'Prompt','Sarabun',sans-serif;font-weight:500;font-size:15px;color:var(--dark);padding:0 12px 24px;line-height:1.35}
+.brand{cursor:pointer}.brand .lg{display:block;width:46px;height:46px;border-radius:14px;object-fit:cover;margin-bottom:12px;background:linear-gradient(135deg,#ffb8cf,#a9d6ff)}.side .set{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.brand small{display:block;color:var(--mute);font-weight:400;font-size:12px;margin-top:2px;font-family:'Sarabun',sans-serif}
+.nav button{display:block;width:100%;text-align:left;border:0;background:none;padding:10px 14px;margin-bottom:4px;border-radius:14px;font:inherit;font-size:14px;color:var(--text);cursor:pointer;transition:all .15s}
+.nav button:hover{background:#f3f9ff}
+.nav button.on{background:var(--soft);color:#2a78b8;font-weight:600}
+.top{display:none;position:sticky;top:0;z-index:15;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:12px 18px;align-items:center;justify-content:space-between}
+.top b{font-size:14px;font-weight:600}
+main{margin-left:254px;padding:36px 40px 80px;max-width:1160px;position:relative}
+h1{font-family:'Prompt','Sarabun',sans-serif;font-size:24px;font-weight:500;margin:0 0 4px;color:var(--dark)}
+.sub{color:var(--mute);margin:0 0 26px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.card{border:0;border-radius:22px;padding:20px 22px;background:#fff;box-shadow:0 4px 20px rgba(90,110,150,.07)}
+.grid .card:nth-child(1){background:#e3f2ff}
+.grid .card:nth-child(2){background:#ffe8ef}
+.grid .card:nth-child(3){background:#d9ecfb}
+.grid .card:nth-child(4){background:#ffdde8}
+.card .l{color:#7d6f76;font-size:13px}
+.card .v{font-family:'Prompt','Sarabun',sans-serif;font-size:26px;font-weight:500;margin-top:6px;color:var(--dark)}
+.card .n{font-size:12px;color:#8a7c83;margin-top:4px}
+.inc{color:var(--inc)!important}.exp{color:var(--exp)!important}
+.box{background:var(--card);border-radius:24px;padding:24px 26px;margin-bottom:24px;box-shadow:0 4px 24px rgba(90,110,150,.07)}
+.box h2{font-family:'Prompt','Sarabun',sans-serif;font-size:16px;font-weight:500;margin:0 0 16px;color:var(--dark)}
+main>.row{background:var(--card);border-radius:22px;padding:16px 20px;box-shadow:0 4px 20px rgba(90,110,150,.07);margin-bottom:20px}
+.row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:18px}
+.f{display:flex;flex-direction:column;gap:5px;min-width:150px}
+.f label{font-size:12px;color:var(--mute);padding-left:4px}
+input,select,textarea{font:inherit;font-size:14px;padding:10px 14px;border:1px solid #e6ecf6;border-radius:14px;background:#fafcff;color:var(--text);width:100%;transition:all .15s}
+input[type=file]{padding:8px 10px;font-size:13px}
+input:focus,select:focus,textarea:focus{outline:0;border-color:#8ec5f0;box-shadow:0 0 0 4px #e3f2ff}
+textarea{resize:vertical;min-height:70px}
+.btn{font:inherit;font-size:14px;border:1px solid var(--rose);background:var(--rose);color:#fff;padding:9px 22px;border-radius:99px;cursor:pointer;white-space:nowrap;transition:all .15s}
+.btn:hover{background:var(--rose2);border-color:var(--rose2);transform:translateY(-1px)}
+.btn.o{background:#fff;color:#2a78b8;border-color:#cfe5f8}
+.btn.o:hover{background:var(--soft);border-color:#8ec5f0}
+.btn.d{background:#fff;color:var(--exp);border-color:#f8d3df}
+.btn.d:hover{background:#fff0f4}
+.btn.s{padding:4px 14px;font-size:13px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;color:var(--mute);font-weight:500;font-size:12px;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:#f6faff}
+th:first-child{border-radius:12px 0 0 12px}th:last-child{border-radius:0 12px 12px 0}
+td{padding:14px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:hover td{background:#f8fbff}
+tr:last-child td{border-bottom:0}
+.tag{display:inline-block;padding:2px 12px;border-radius:99px;font-size:12px;background:#eef1f7;color:var(--mute)}
+.tag.i{background:#e0f0fd;color:var(--inc)}
+.tag.e{background:#ffe6ee;color:var(--exp)}
+.empty{text-align:center;color:var(--mute);padding:36px 0}
+.thumb{width:38px;height:38px;object-fit:cover;border-radius:10px;cursor:pointer;margin-top:6px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px 22px}
+.ov{position:fixed;inset:0;background:rgba(74,63,68,.28);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.md{background:#fff;border-radius:26px;box-shadow:0 16px 48px rgba(80,50,60,.18);padding:28px;width:100%;max-width:420px;max-height:90vh;overflow:auto}
+.md h3{font-family:'Prompt','Sarabun',sans-serif;margin:0 0 18px;font-size:17px;font-weight:500}
+.md .f{margin-bottom:14px}
+.acts{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--dark);color:#fff;padding:11px 22px;border-radius:99px;z-index:60;display:none;max-width:90vw;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.prev{margin-top:8px}
+.prev img{max-width:160px;max-height:160px;border-radius:14px;display:block;margin-bottom:6px}
+#hsum{color:var(--mute);font-size:13px;background:#f6faff;border-radius:12px;padding:8px 14px;display:inline-block}
+#hsum b{color:var(--dark);font-weight:600}
+@media(max-width:900px){
+.side{left:0;top:0;bottom:0;border-radius:0 24px 24px 0;transform:translateX(-105%);transition:.2s}
+.side.open{transform:none;box-shadow:0 0 40px rgba(80,50,60,.2)}
+.top{display:flex}
+main{margin-left:0;padding:20px 14px 60px}
+.box{padding:18px 16px;border-radius:20px}
+.two{grid-template-columns:1fr}
+.f{min-width:100%}
+.row .btn{width:100%}
+}
+</style>
+</head>
+<body>
+<aside class="side" id="side">
+  <div class="brand" id="brand" onclick="shopForm()"></div>
+  <nav class="nav" id="nav"></nav>
+  <div class="nav set"><button onclick="shopForm()">ตั้งค่าร้าน</button></div>
+</aside>
+<div class="top"><b id="topTitle">Dashboard ภาพรวม</b><button class="btn o s" onclick="toggleSide()">เมนู</button></div>
+<main id="main"></main>
+<div id="toast"></div>
+<div id="modalRoot"></div>
+
+<script>
+/* ---------- ค่าคงที่ ---------- */
+var KEY='ie_tracker_v1';
+var CH={chat:'ขายผ่านแชท',web:'ขายผ่านเว็บไซต์'};
+var EXPC=['ค่าสมัครสมาชิกแอปพรีเมี่ยม','ค่าบัญชีและค่าบริการ','ค่าโฆษณาและการตลาด','ค่าธรรมเนียมธุรกรรม','ค่าใช้จ่ายอื่น ๆ'];
+var INCC=['รายได้จากการขายแอปพรีเมี่ยม','รายรับอื่น ๆ'];
+var MENU=[['dash','Dashboard ภาพรวม'],['chat','ระบบขายผ่านแชท'],['web','ระบบขายผ่านเว็บไซต์'],['form','บันทึกรายรับ-รายจ่าย'],['hist','ประวัติรายการ'],['exp','ส่งออกเอกสาร']];
+
+/* ---------- ตัวช่วย ---------- */
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function today(){return new Date().toLocaleDateString('sv-SE')}
+function iso(back){var d=new Date();d.setDate(d.getDate()-back);return d.toLocaleDateString('sv-SE')}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function money(n){return Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function dth(s){if(!s)return '-';var p=s.split('-');return p[2]+'/'+p[1]+'/'+(+p[0]+543)}
+function $(id){return document.getElementById(id)}
+function toast(m){var t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(function(){t.style.display='none'},2600)}
+
+/* ---------- ข้อมูล ---------- */
+function seed(){
+  var acc=[
+    {id:'a1',ch:'chat',name:'ธนาคารกสิกรไทย (แชท)',open:2000},
+    {id:'a2',ch:'chat',name:'พร้อมเพย์ (แชท)',open:500},
+    {id:'a3',ch:'web',name:'ธนาคารไทยพาณิชย์ (เว็บไซต์)',open:3000}
+  ];
+  var T=function(d,type,name,cat,amt,note,ch,ac){return{id:uid(),date:iso(d),type:type,name:name,cat:cat,amt:amt,note:note,ch:ch,acc:ac,img:''}};
+  var tx=[
+    T(0,'inc','ขาย Netflix 1 เดือน','รายได้จากการขายแอปพรีเมี่ยม',149,'ลูกค้า A','chat','a1'),
+    T(1,'inc','ขาย Spotify 3 เดือน','รายได้จากการขายแอปพรีเมี่ยม',299,'','chat','a2'),
+    T(2,'inc','ขาย YouTube Premium','รายได้จากการขายแอปพรีเมี่ยม',99,'','chat','a1'),
+    T(3,'exp','ซื้อบัญชีต้นทาง Netflix','ค่าบัญชีและค่าบริการ',420,'ล็อตเดือนนี้','chat','a1'),
+    T(4,'exp','ยิงโฆษณา Facebook','ค่าโฆษณาและการตลาด',350,'','chat','a1'),
+    T(6,'inc','ขาย Canva Pro','รายได้จากการขายแอปพรีเมี่ยม',189,'','chat','a2'),
+    T(0,'inc','ออเดอร์เว็บ #1021','รายได้จากการขายแอปพรีเมี่ยม',259,'','web','a3'),
+    T(1,'inc','ออเดอร์เว็บ #1020','รายได้จากการขายแอปพรีเมี่ยม',129,'','web','a3'),
+    T(2,'exp','ค่าสมัคร ChatGPT Plus','ค่าสมัครสมาชิกแอปพรีเมี่ยม',700,'','web','a3'),
+    T(3,'exp','ค่าธรรมเนียมรับชำระเงิน','ค่าธรรมเนียมธุรกรรม',45,'','web','a3'),
+    T(5,'inc','ออเดอร์เว็บ #1018','รายได้จากการขายแอปพรีเมี่ยม',349,'','web','a3'),
+    T(8,'exp','ค่าโดเมนและโฮสต์','ค่าใช้จ่ายอื่น ๆ',390,'รายปี','web','a3'),
+    T(40,'inc','ออเดอร์เว็บ #0950','รายได้จากการขายแอปพรีเมี่ยม',199,'','web','a3'),
+    T(45,'exp','ซื้อบัญชีต้นทาง Spotify','ค่าบัญชีและค่าบริการ',280,'','chat','a1')
+  ];
+  return{acc:acc,tx:tx};
+}
+var S;
+function load(){try{var r=localStorage.getItem(KEY);if(r){S=JSON.parse(r);fixS();return}}catch(e){}S=seed();fixS();save(true)}
+function fixS(){if(!S.shop)S.shop={name:'',logo:''}}
+function save(q){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){if(!q)toast('บันทึกไม่สำเร็จ พื้นที่จัดเก็บเต็ม ลองลบรูปหรือรายการเก่า');return false}}
+function sum(list){var i=0,e=0;list.forEach(function(t){if(t.type==='inc')i+=+t.amt;else e+=+t.amt});return{inc:i,exp:e,net:i-e}}
+function accBal(a){var s=sum(S.tx.filter(function(t){return t.acc===a.id}));return{inc:s.inc,exp:s.exp,bal:(+a.open||0)+s.net}}
+function chBal(ch){return S.acc.filter(function(a){return a.ch===ch}).reduce(function(x,a){return x+accBal(a).bal},0)}
+function accName(id){var a=S.acc.find(function(x){return x.id===id});return a?a.name:'-'}
+function inPeriod(t,p,v){return p==='all'||!v||t.date.indexOf(v)===0}
+
+/* ---------- สถานะหน้า ---------- */
+var view='dash',editId=null,preset='chat',formImg='';
+var D={scope:'all',p:'month',v:today().slice(0,7)};
+var H={q:'',from:'',to:'',type:'',cat:'',ch:''};
+var E={ch:'all',from:'',to:''};
+
+function toggleSide(){$('side').classList.toggle('open')}
+function go(v,id,ch){view=v;if(v==='form'){editId=id||null;if(ch)preset=ch;if(!id)formImg='';else{var t=S.tx.find(function(x){return x.id===id});formImg=t?t.img||'':''}}
+  $('side').classList.remove('open');render();window.scrollTo(0,0)}
+function drawBrand(){
+  var sh=S.shop;
+  $('brand').innerHTML=(sh.logo?'<img class="lg" src="'+sh.logo+'">':'<div class="lg"></div>')+esc(sh.name||'ระบบรายรับ-รายจ่าย')+'<small>'+(sh.name?'ระบบรายรับ-รายจ่าย':'ธุรกิจขายแอปพรีเมี่ยม')+'</small>';
+  document.title=sh.name||'ระบบบันทึกรายรับ-รายจ่าย';
+}
+var tmpLogo='';
+function shopForm(){
+  tmpLogo=S.shop.logo||'';
+  $('side').classList.remove('open');
+  modal('<h3>ตั้งค่าร้าน</h3><div class="f"><label>ชื่อร้าน</label><input id="sn" value="'+esc(S.shop.name)+'" placeholder="เช่น ร้านแอปพรีเมี่ยม"></div><div class="f"><label>โลโก้ร้าน (เลือกจากเครื่อง)</label><input id="sl" type="file" accept="image/*" onchange="pickLogo(this)"><div class="prev" id="lprev"></div></div><div class="acts"><button class="btn o" onclick="closeM()">ยกเลิก</button><button class="btn" onclick="saveShop()">บันทึก</button></div>');
+  showLogo();setTimeout(function(){$('sn').focus()},50);
+}
+function showLogo(){
+  $('lprev').innerHTML=tmpLogo?'<img src="'+tmpLogo+'" style="max-width:120px;max-height:120px"><span style="font-size:12px;color:var(--mute)">ขนาดหลังบีบอัด ~'+Math.round(tmpLogo.length*0.75/1024)+' KB</span> <button class="btn d s" type="button" onclick="tmpLogo=\'\';$(\'sl\').value=\'\';showLogo()">ลบโลโก้</button>':'';
+}
+function pickLogo(inp){
+  var f=inp.files[0];if(!f)return;
+  if(f.type.indexOf('image/')!==0){toast('กรุณาเลือกไฟล์รูปภาพ');inp.value='';return}
+  var r=new FileReader();
+  r.onload=function(e){
+    var im=new Image();
+    im.onload=function(){
+      var k=Math.min(1,256/Math.max(im.width,im.height));
+      var c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+      c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+      tmpLogo=c.toDataURL('image/webp',0.85);showLogo();
+    };
+    im.onerror=function(){toast('เปิดรูปภาพไม่ได้')};
+    im.src=e.target.result;
+  };
+  r.readAsDataURL(f);
+}
+function saveShop(){
+  S.shop={name:$('sn').value.trim(),logo:tmpLogo};
+  if(save()){closeM();toast('บันทึกข้อมูลร้านแล้ว');render()}
+}
+function render(){
+  drawBrand();
+  $('nav').innerHTML=MENU.map(function(m){return '<button class="'+(view===m[0]?'on':'')+'" onclick="go(\''+m[0]+'\')">'+m[1]+'</button>'}).join('');
+  $('topTitle').textContent=(MENU.find(function(m){return m[0]===view})||[])[1];
+  var f={dash:rDash,chat:function(){rChan('chat')},web:function(){rChan('web')},form:rForm,hist:rHist,exp:rExp}[view];
+  f();
+}
+
+/* ---------- Modal ---------- */
+function modal(h){$('modalRoot').innerHTML='<div class="ov" onclick="if(event.target===this)closeM()"><div class="md">'+h+'</div></div>'}
+function closeM(){$('modalRoot').innerHTML=''}
+var cfCb=null;
+function confirmBox(msg,cb){cfCb=cb;modal('<h3>ยืนยันการดำเนินการ</h3><p>'+msg+'</p><div class="acts"><button class="btn o" onclick="closeM()">ยกเลิก</button><button class="btn" onclick="var c=cfCb;closeM();c&&c()">ยืนยัน</button></div>')}
+function viewImg(id){var t=S.tx.find(function(x){return x.id===id});if(t&&t.img)modal('<img src="'+t.img+'" style="width:100%;border-radius:8px"><div class="acts"><button class="btn o" onclick="closeM()">ปิด</button></div>')}
+
+/* ---------- Dashboard ---------- */
+function setDash(k,val){D[k]=val;
+  if(k==='p'){D.v=val==='day'?today():val==='month'?today().slice(0,7):val==='year'?today().slice(0,4):''}
+  rDash()}
+function rDash(){
+  var L=S.tx.filter(function(t){return(D.scope==='all'||t.ch===D.scope)&&inPeriod(t,D.p,D.v)});
+  var s=sum(L);
+  var bal=D.scope==='all'?chBal('chat')+chBal('web'):chBal(D.scope);
+  var inp=D.p==='day'?'<input type="date" value="'+D.v+'" onchange="setDash(\'v\',this.value)">':D.p==='month'?'<input type="month" value="'+D.v+'" onchange="setDash(\'v\',this.value)">':D.p==='year'?'<input type="number" min="2000" max="2100" value="'+D.v+'" onchange="setDash(\'v\',this.value)">':'<input disabled value="ทั้งหมด">';
+  var chs=D.scope==='all'?['chat','web']:[D.scope];
+  var chRows=chs.map(function(c){var x=sum(L.filter(function(t){return t.ch===c}));
+    return '<tr><td>'+CH[c]+'</td><td class="r inc">'+money(x.inc)+'</td><td class="r exp">'+money(x.exp)+'</td><td class="r">'+money(x.net)+'</td><td class="r">'+money(chBal(c))+'</td></tr>'}).join('');
+  var cats=INCC.concat(EXPC);
+  var catRows=cats.map(function(c){var x=sum(L.filter(function(t){return t.cat===c}));
+    if(!x.inc&&!x.exp)return '';
+    return '<tr><td>'+esc(c)+'</td><td class="r inc">'+money(x.inc)+'</td><td class="r exp">'+money(x.exp)+'</td></tr>'}).join('')||'<tr><td colspan="3" class="empty">ไม่มีข้อมูลในช่วงเวลานี้</td></tr>';
+  $('main').innerHTML='<h1>Dashboard ภาพรวม</h1><p class="sub">สรุปข้อมูลทางการเงินตามช่องทางและช่วงเวลาที่เลือก</p>'+
+  '<div class="row"><div class="f"><label>ระบบ</label><select onchange="setDash(\'scope\',this.value)"><option value="all"'+(D.scope==='all'?' selected':'')+'>ภาพรวมทั้งหมด</option><option value="chat"'+(D.scope==='chat'?' selected':'')+'>ขายผ่านแชท</option><option value="web"'+(D.scope==='web'?' selected':'')+'>ขายผ่านเว็บไซต์</option></select></div>'+
+  '<div class="f"><label>ช่วงเวลา</label><select onchange="setDash(\'p\',this.value)"><option value="day"'+(D.p==='day'?' selected':'')+'>รายวัน</option><option value="month"'+(D.p==='month'?' selected':'')+'>รายเดือน</option><option value="year"'+(D.p==='year'?' selected':'')+'>รายปี</option><option value="all"'+(D.p==='all'?' selected':'')+'>ทั้งหมด</option></select></div>'+
+  '<div class="f"><label>เลือกวันที่/เดือน/ปี</label>'+inp+'</div></div>'+
+  '<div class="grid"><div class="card"><div class="l">รายรับรวม</div><div class="v inc">'+money(s.inc)+'</div></div>'+
+  '<div class="card"><div class="l">รายจ่ายรวม</div><div class="v exp">'+money(s.exp)+'</div></div>'+
+  '<div class="card"><div class="l">กำไรสุทธิ</div><div class="v '+(s.net<0?'exp':'')+'">'+money(s.net)+'</div></div>'+
+  '<div class="card"><div class="l">ยอดเงินคงเหลือ</div><div class="v">'+money(bal)+'</div><div class="n">รวมยอดตั้งต้นของทุกบัญชี ณ ปัจจุบัน</div></div></div>'+
+  '<div class="box"><h2>สรุปแยกตามช่องทาง</h2><div class="tw"><table><thead><tr><th>ช่องทาง</th><th class="r">รายรับ</th><th class="r">รายจ่าย</th><th class="r">กำไรสุทธิ</th><th class="r">ยอดคงเหลือ</th></tr></thead><tbody>'+chRows+'</tbody></table></div></div>'+
+  '<div class="box"><h2>สรุปแยกตามหมวดหมู่</h2><div class="tw"><table><thead><tr><th>หมวดหมู่</th><th class="r">รายรับ</th><th class="r">รายจ่าย</th></tr></thead><tbody>'+catRows+'</tbody></table></div></div>';
+}
+
+/* ---------- หน้าระบบแต่ละช่องทาง ---------- */
+function txRow(t,showCh){
+  return '<tr><td>'+dth(t.date)+'</td><td>'+esc(t.name)+'</td><td>'+esc(t.cat)+'</td><td><span class="tag '+(t.type==='inc'?'i':'e')+'">'+(t.type==='inc'?'รายรับ':'รายจ่าย')+'</span></td><td class="r '+(t.type==='inc'?'inc':'exp')+'">'+money(t.amt)+'</td>'+
+  '<td>'+(showCh?CH[t.ch]+'<br>':'')+'<span style="color:var(--mute);font-size:13px">'+esc(accName(t.acc))+'</span></td>'+
+  '<td>'+esc(t.note)+(t.img?'<br><img class="thumb" src="'+t.img+'" onclick="viewImg(\''+t.id+'\')">':'')+'</td>'+
+  '<td style="white-space:nowrap"><button class="btn o s" onclick="go(\'form\',\''+t.id+'\')">แก้ไข</button> <button class="btn d s" onclick="delTx(\''+t.id+'\')">ลบ</button></td></tr>';
+}
+function rChan(ch){
+  var L=S.tx.filter(function(t){return t.ch===ch}).sort(function(a,b){return b.date.localeCompare(a.date)});
+  var s=sum(L);
+  var accs=S.acc.filter(function(a){return a.ch===ch});
+  var ar=accs.map(function(a){var b=accBal(a);return '<tr><td>'+esc(a.name)+'</td><td class="r">'+money(a.open)+'</td><td class="r inc">'+money(b.inc)+'</td><td class="r exp">'+money(b.exp)+'</td><td class="r"><b>'+money(b.bal)+'</b></td><td style="white-space:nowrap"><button class="btn o s" onclick="accForm(\''+a.id+'\')">แก้ไข</button> <button class="btn d s" onclick="delAcc(\''+a.id+'\')">ลบ</button></td></tr>'}).join('')||'<tr><td colspan="6" class="empty">ยังไม่มีบัญชี กรุณาเพิ่มบัญชีรับเงิน</td></tr>';
+  var tr=L.slice(0,10).map(function(t){return txRow(t,false)}).join('')||'<tr><td colspan="8" class="empty">ยังไม่มีรายการ</td></tr>';
+  $('main').innerHTML='<h1>ระบบ'+CH[ch]+'</h1><p class="sub">ข้อมูลรายรับ รายจ่าย และบัญชีรับเงินของช่องทางนี้โดยเฉพาะ</p>'+
+  '<div class="grid"><div class="card"><div class="l">รายรับ</div><div class="v inc">'+money(s.inc)+'</div></div><div class="card"><div class="l">รายจ่าย</div><div class="v exp">'+money(s.exp)+'</div></div><div class="card"><div class="l">ยอดคงเหลือ</div><div class="v">'+money(chBal(ch))+'</div><div class="n">รวมยอดตั้งต้นของบัญชี</div></div></div>'+
+  '<div class="box"><div class="row" style="margin-bottom:10px;justify-content:space-between"><h2 style="margin:0">บัญชีรับเงิน</h2><button class="btn s" onclick="accForm(null,\''+ch+'\')">เพิ่มบัญชี</button></div><div class="tw"><table><thead><tr><th>ชื่อบัญชี</th><th class="r">ยอดตั้งต้น</th><th class="r">รับเข้า</th><th class="r">จ่ายออก</th><th class="r">คงเหลือ</th><th></th></tr></thead><tbody>'+ar+'</tbody></table></div></div>'+
+  '<div class="box"><div class="row" style="margin-bottom:10px;justify-content:space-between"><h2 style="margin:0">รายการล่าสุด</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn s" onclick="go(\'form\',null,\''+ch+'\')">เพิ่มรายการ</button><button class="btn o s" onclick="H={q:\'\',from:\'\',to:\'\',type:\'\',cat:\'\',ch:\''+ch+'\'};go(\'hist\')">ดูทั้งหมด</button></div></div><div class="tw"><table><thead><tr><th>วันที่</th><th>รายการ</th><th>หมวดหมู่</th><th>ประเภท</th><th class="r">จำนวนเงิน</th><th>บัญชี</th><th>หมายเหตุ</th><th></th></tr></thead><tbody>'+tr+'</tbody></table></div></div>';
+}
+function accForm(id,ch){
+  var a=id?S.acc.find(function(x){return x.id===id}):null;
+  modal('<h3>'+(a?'แก้ไขบัญชีรับเงิน':'เพิ่มบัญชีรับเงิน')+'</h3><div class="f"><label>ชื่อบัญชี</label><input id="an" value="'+esc(a?a.name:'')+'" placeholder="เช่น ธนาคารกสิกรไทย"></div><div class="f"><label>ยอดตั้งต้น (บาท)</label><input id="ao" type="number" step="0.01" value="'+(a?a.open:0)+'"></div><div class="acts"><button class="btn o" onclick="closeM()">ยกเลิก</button><button class="btn" onclick="saveAcc(\''+(id||'')+'\',\''+(a?a.ch:ch)+'\')">บันทึก</button></div>');
+  setTimeout(function(){$('an').focus()},50);
+}
+function saveAcc(id,ch){
+  var n=$('an').value.trim(),o=parseFloat($('ao').value)||0;
+  if(!n){toast('กรุณากรอกชื่อบัญชี');return}
+  if(id){var a=S.acc.find(function(x){return x.id===id});a.name=n;a.open=o}else S.acc.push({id:uid(),ch:ch,name:n,open:o});
+  if(save()){closeM();toast('บันทึกบัญชีแล้ว');render()}
+}
+function delAcc(id){
+  if(S.tx.some(function(t){return t.acc===id})){toast('ไม่สามารถลบได้ เพราะบัญชีนี้มีรายการอยู่');return}
+  confirmBox('ต้องการลบบัญชีนี้ใช่หรือไม่',function(){S.acc=S.acc.filter(function(a){return a.id!==id});save();toast('ลบบัญชีแล้ว');render()});
+}
+function delTx(id){
+  var t=S.tx.find(function(x){return x.id===id});
+  confirmBox('ต้องการลบรายการ "'+esc(t.name)+'" จำนวน '+money(t.amt)+' บาท ใช่หรือไม่ การลบไม่สามารถย้อนกลับได้',function(){S.tx=S.tx.filter(function(x){return x.id!==id});save();toast('ลบรายการแล้ว');render()});
+}
+
+/* ---------- ฟอร์มบันทึกรายการ ---------- */
+function rForm(){
+  var t=editId?S.tx.find(function(x){return x.id===editId}):null;
+  if(editId&&!t){editId=null}
+  var v=t||{date:today(),type:'exp',name:'',cat:'',amt:'',note:'',ch:preset,acc:''};
+  $('main').innerHTML='<h1>'+(t?'แก้ไขรายการ':'บันทึกรายรับ-รายจ่าย')+'</h1><p class="sub">กรอกข้อมูลรายการทางการเงิน รายการจะแสดงในระบบของช่องทางที่เลือกเท่านั้น</p>'+
+  '<div class="box" style="max-width:720px"><div class="two">'+
+  '<div class="f"><label>วันที่ทำรายการ</label><input id="fd" type="date" value="'+v.date+'"></div>'+
+  '<div class="f"><label>ประเภทรายการ</label><select id="ft" onchange="fillCat()"><option value="inc"'+(v.type==='inc'?' selected':'')+'>รายรับ</option><option value="exp"'+(v.type==='exp'?' selected':'')+'>รายจ่าย</option></select></div>'+
+  '<div class="f"><label>ช่องทางธุรกิจ</label><select id="fc" onchange="fillAcc()"><option value="chat"'+(v.ch==='chat'?' selected':'')+'>ขายผ่านแชท</option><option value="web"'+(v.ch==='web'?' selected':'')+'>ขายผ่านเว็บไซต์</option></select></div>'+
+  '<div class="f"><label>บัญชีที่เกี่ยวข้อง</label><select id="fa"></select></div>'+
+  '<div class="f"><label>ชื่อรายการ / รายละเอียด</label><input id="fn" value="'+esc(v.name)+'" placeholder="เช่น ขาย Netflix 1 เดือน"></div>'+
+  '<div class="f"><label>หมวดหมู่</label><select id="fg"></select></div>'+
+  '<div class="f"><label>จำนวนเงิน (บาท)</label><input id="fm" type="number" min="0" step="0.01" value="'+v.amt+'" placeholder="0.00"></div>'+
+  '<div class="f"><label>รูปแนบ (ไม่บังคับ)</label><input id="fi" type="file" accept="image/*" onchange="pickImg(this)"><div class="prev" id="prev"></div></div></div>'+
+  '<div class="f" style="margin-top:12px"><label>หมายเหตุเพิ่มเติม</label><textarea id="fo">'+esc(v.note)+'</textarea></div>'+
+  '<div class="acts" style="justify-content:flex-start;margin-top:18px"><button class="btn" onclick="saveTx()">'+(t?'บันทึกการแก้ไข':'บันทึกรายการ')+'</button>'+(t?'<button class="btn o" onclick="go(\'hist\')">ยกเลิก</button>':'<button class="btn o" onclick="go(\'form\')">ล้างฟอร์ม</button>')+'</div></div>';
+  fillCat(v.cat);fillAcc(v.acc);showPrev();
+}
+function fillCat(sel){
+  var L=$('ft').value==='inc'?INCC:EXPC;
+  $('fg').innerHTML=L.map(function(c){return '<option'+(c===sel?' selected':'')+'>'+esc(c)+'</option>'}).join('');
+}
+function fillAcc(sel){
+  var L=S.acc.filter(function(a){return a.ch===$('fc').value});
+  $('fa').innerHTML=L.length?L.map(function(a){return '<option value="'+a.id+'"'+(a.id===sel?' selected':'')+'>'+esc(a.name)+'</option>'}).join(''):'<option value="">ยังไม่มีบัญชี (เพิ่มได้ในหน้าระบบของช่องทางนั้น)</option>';
+}
+function showPrev(){
+  $('prev').innerHTML=formImg?'<img src="'+formImg+'"><span style="font-size:12px;color:var(--mute)">ขนาดหลังบีบอัด ~'+Math.round(formImg.length*0.75/1024)+' KB</span> <button class="btn d s" type="button" onclick="formImg=\'\';$(\'fi\').value=\'\';showPrev()">ลบรูป</button>':'';
+}
+function pickImg(inp){
+  var f=inp.files[0];if(!f)return;
+  if(f.type.indexOf('image/')!==0){toast('กรุณาเลือกไฟล์รูปภาพ');inp.value='';return}
+  var r=new FileReader();
+  r.onload=function(e){
+    var im=new Image();
+    im.onload=function(){
+      var M=800,w=im.width,h=im.height,k=Math.min(1,M/Math.max(w,h));
+      var c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);
+      var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
+      formImg=c.toDataURL('image/jpeg',0.7);showPrev();
+    };
+    im.onerror=function(){toast('เปิดรูปภาพไม่ได้')};
+    im.src=e.target.result;
+  };
+  r.readAsDataURL(f);
+}
+function saveTx(){
+  var o={date:$('fd').value,type:$('ft').value,ch:$('fc').value,acc:$('fa').value,name:$('fn').value.trim(),cat:$('fg').value,amt:parseFloat($('fm').value),note:$('fo').value.trim(),img:formImg};
+  if(!o.date){toast('กรุณาเลือกวันที่');return}
+  if(!o.name){toast('กรุณากรอกชื่อรายการ');return}
+  if(!o.acc){toast('กรุณาเลือกบัญชี หากไม่มีให้เพิ่มบัญชีก่อน');return}
+  if(!(o.amt>0)){toast('กรุณากรอกจำนวนเงินมากกว่า 0');return}
+  if(editId){var t=S.tx.find(function(x){return x.id===editId});Object.assign(t,o)}else{o.id=uid();S.tx.push(o)}
+  var ch=o.ch;
+  if(save()){toast(editId?'แก้ไขรายการแล้ว':'บันทึกรายการแล้ว');editId=null;formImg='';preset=ch;go('hist')}
+}
+
+/* ---------- ประวัติรายการ ---------- */
+function histList(){
+  var q=H.q.toLowerCase();
+  return S.tx.filter(function(t){
+    return(!q||(t.name+' '+t.note+' '+t.cat).toLowerCase().indexOf(q)>-1)&&(!H.from||t.date>=H.from)&&(!H.to||t.date<=H.to)&&(!H.type||t.type===H.type)&&(!H.cat||t.cat===H.cat)&&(!H.ch||t.ch===H.ch);
+  }).sort(function(a,b){return b.date.localeCompare(a.date)||b.id.localeCompare(a.id)});
+}
+function setH(k,v){H[k]=v;drawHist()}
+function drawHist(){
+  var L=histList(),s=sum(L);
+  $('hbody').innerHTML=L.map(function(t){return txRow(t,true)}).join('')||'<tr><td colspan="8" class="empty">ไม่พบรายการ</td></tr>';
+  $('hsum').innerHTML='พบ '+L.length+' รายการ | รายรับ <b class="inc">'+money(s.inc)+'</b> | รายจ่าย <b class="exp">'+money(s.exp)+'</b> | สุทธิ <b>'+money(s.net)+'</b>';
+}
+function rHist(){
+  var cats=INCC.concat(EXPC);
+  $('main').innerHTML='<h1>ประวัติรายการ</h1><p class="sub">ค้นหาและกรองรายการทางการเงินทั้งหมด</p>'+
+  '<div class="box"><div class="row">'+
+  '<div class="f" style="flex:1"><label>ค้นหา</label><input value="'+esc(H.q)+'" oninput="setH(\'q\',this.value)" placeholder="ชื่อรายการ หมายเหตุ"></div>'+
+  '<div class="f"><label>ตั้งแต่วันที่</label><input type="date" value="'+H.from+'" onchange="setH(\'from\',this.value)"></div>'+
+  '<div class="f"><label>ถึงวันที่</label><input type="date" value="'+H.to+'" onchange="setH(\'to\',this.value)"></div>'+
+  '<div class="f"><label>ประเภท</label><select onchange="setH(\'type\',this.value)"><option value="">ทั้งหมด</option><option value="inc"'+(H.type==='inc'?' selected':'')+'>รายรับ</option><option value="exp"'+(H.type==='exp'?' selected':'')+'>รายจ่าย</option></select></div>'+
+  '<div class="f"><label>หมวดหมู่</label><select onchange="setH(\'cat\',this.value)"><option value="">ทั้งหมด</option>'+cats.map(function(c){return '<option'+(H.cat===c?' selected':'')+'>'+esc(c)+'</option>'}).join('')+'</select></div>'+
+  '<div class="f"><label>ช่องทาง</label><select onchange="setH(\'ch\',this.value)"><option value="">ทั้งหมด</option><option value="chat"'+(H.ch==='chat'?' selected':'')+'>ขายผ่านแชท</option><option value="web"'+(H.ch==='web'?' selected':'')+'>ขายผ่านเว็บไซต์</option></select></div>'+
+  '<button class="btn o" onclick="H={q:\'\',from:\'\',to:\'\',type:\'\',cat:\'\',ch:\'\'};rHist()">ล้างตัวกรอง</button></div>'+
+  '<p id="hsum" style="margin:0 0 10px"></p>'+
+  '<div class="tw"><table><thead><tr><th>วันที่</th><th>รายการ</th><th>หมวดหมู่</th><th>ประเภท</th><th class="r">จำนวนเงิน</th><th>ช่องทาง / บัญชี</th><th>หมายเหตุ</th><th></th></tr></thead><tbody id="hbody"></tbody></table></div></div>';
+  drawHist();
+}
+
+/* ---------- ส่งออก ---------- */
+function setE(k,v){E[k]=v;drawExp()}
+function expRows(){
+  return S.tx.filter(function(t){return(E.ch==='all'||t.ch===E.ch)&&(!E.from||t.date>=E.from)&&(!E.to||t.date<=E.to)}).sort(function(a,b){return a.date.localeCompare(b.date)});
+}
+function expInfo(){
+  var chn=E.ch==='all'?'ภาพรวมทั้งสองระบบ':'ระบบ'+CH[E.ch];
+  var per=(E.from||E.to)?(E.from?dth(E.from):'เริ่มต้น')+' - '+(E.to?dth(E.to):'ปัจจุบัน'):'ทุกช่วงเวลา';
+  return{chn:chn,per:per,now:dth(today())};
+}
+function drawExp(){
+  var L=expRows(),s=sum(L);
+  $('epv').innerHTML='จะส่งออก <b>'+L.length+'</b> รายการ | รายรับ <b class="inc">'+money(s.inc)+'</b> | รายจ่าย <b class="exp">'+money(s.exp)+'</b> | สุทธิ <b>'+money(s.net)+'</b>';
+}
+function rExp(){
+  $('main').innerHTML='<h1>ส่งออกเอกสาร</h1><p class="sub">ส่งออกข้อมูลเป็นไฟล์ PDF หรือ Excel ตามช่องทางและช่วงเวลาที่เลือก</p>'+
+  '<div class="box" style="max-width:760px"><div class="row">'+
+  '<div class="f"><label>ช่องทางที่ต้องการส่งออก</label><select onchange="setE(\'ch\',this.value)"><option value="all"'+(E.ch==='all'?' selected':'')+'>ภาพรวมทั้งสองระบบ</option><option value="chat"'+(E.ch==='chat'?' selected':'')+'>เฉพาะขายผ่านแชท</option><option value="web"'+(E.ch==='web'?' selected':'')+'>เฉพาะขายผ่านเว็บไซต์</option></select></div>'+
+  '<div class="f"><label>ตั้งแต่วันที่</label><input type="date" value="'+E.from+'" onchange="setE(\'from\',this.value)"></div>'+
+  '<div class="f"><label>ถึงวันที่</label><input type="date" value="'+E.to+'" onchange="setE(\'to\',this.value)"></div></div>'+
+  '<p id="epv"></p><div class="acts" style="justify-content:flex-start"><button class="btn" onclick="expPDF()">ส่งออก PDF</button><button class="btn o" onclick="expXLS()">ส่งออก Excel</button></div>'+
+  '<p class="sub" style="margin:14px 0 0;font-size:13px">การส่งออก PDF จะเปิดหน้าต่างพิมพ์ ให้เลือก "บันทึกเป็น PDF" ที่ปลายทาง</p></div>';
+  drawExp();
+}
+function groupSum(L){
+  var o=[];
+  ['chat','web'].forEach(function(c){var x=sum(L.filter(function(t){return t.ch===c}));if(E.ch==='all'||E.ch===c)o.push([CH[c],x.inc,x.exp,x.net])});
+  return o;
+}
+function expPDF(){
+  var L=expRows();if(!L.length){toast('ไม่มีรายการให้ส่งออกในตัวกรองที่เลือก');return}
+  var s=sum(L),i=expInfo();
+  var gs=groupSum(L).map(function(g){return '<tr><td>'+g[0]+'</td><td class="r">'+money(g[1])+'</td><td class="r">'+money(g[2])+'</td><td class="r">'+money(g[3])+'</td></tr>'}).join('');
+  var rows=L.map(function(t,n){return '<tr><td>'+(n+1)+'</td><td>'+dth(t.date)+'</td><td>'+esc(t.name)+'</td><td>'+esc(t.cat)+'</td><td>'+(t.type==='inc'?'รายรับ':'รายจ่าย')+'</td><td class="r">'+money(t.amt)+'</td><td>'+CH[t.ch]+'<br>'+esc(accName(t.acc))+'</td><td>'+esc(t.note)+'</td></tr>'}).join('');
+  var h='<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>รายงานรายรับ-รายจ่าย</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet"><style>body{font-family:Sarabun,Tahoma,sans-serif;color:#111;font-size:12px;margin:24px}h1{font-size:20px;margin:0 0 4px}p{margin:2px 0;color:#444}table{width:100%;border-collapse:collapse;margin:14px 0}th,td{border:1px solid #ccc;padding:5px 7px;text-align:left;vertical-align:top}th{background:#f1f1f1}.r{text-align:right}h2{font-size:14px;margin:18px 0 0}.t td{font-weight:600;background:#fafafa}@page{margin:14mm}</style></head><body>'+
+  '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'+(S.shop.logo?'<img src="'+S.shop.logo+'" style="height:52px">':'')+'<div>'+(S.shop.name?'<b style="font-size:16px">'+esc(S.shop.name)+'</b>':'')+'<h1>รายงานรายรับ-รายจ่าย</h1></div></div><p>ขอบเขตข้อมูล: '+i.chn+'</p><p>ช่วงเวลา: '+i.per+'</p><p>วันที่ออกเอกสาร: '+i.now+'</p>'+
+  '<h2>สรุปยอด</h2><table><thead><tr><th>รายการสรุป</th><th class="r">รายรับ</th><th class="r">รายจ่าย</th><th class="r">สุทธิ</th></tr></thead><tbody>'+gs+'<tr class="t"><td>รวม</td><td class="r">'+money(s.inc)+'</td><td class="r">'+money(s.exp)+'</td><td class="r">'+money(s.net)+'</td></tr></tbody></table>'+
+  '<h2>รายการทั้งหมด ('+L.length+' รายการ)</h2><table><thead><tr><th>#</th><th>วันที่</th><th>รายการ</th><th>หมวดหมู่</th><th>ประเภท</th><th class="r">จำนวนเงิน</th><th>ช่องทาง / บัญชี</th><th>หมายเหตุ</th></tr></thead><tbody>'+rows+'</tbody></table></body></html>';
+  var f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(f);
+  var d=f.contentWindow.document;d.open();d.write(h);d.close();
+  setTimeout(function(){f.contentWindow.focus();f.contentWindow.print();setTimeout(function(){f.remove()},3000)},700);
+}
+function expXLS(){
+  var L=expRows();if(!L.length){toast('ไม่มีรายการให้ส่งออกในตัวกรองที่เลือก');return}
+  if(typeof XLSX==='undefined'){toast('โหลดไลบรารี Excel ไม่สำเร็จ กรุณาเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่');return}
+  var s=sum(L),i=expInfo();
+  var a=[[S.shop.name||'ร้าน (ยังไม่ระบุชื่อ)'],['รายงานรายรับ-รายจ่าย'],['ขอบเขตข้อมูล',i.chn],['ช่วงเวลา',i.per],['วันที่ออกเอกสาร',i.now],[],['รายการสรุป','รายรับ','รายจ่าย','สุทธิ']];
+  groupSum(L).forEach(function(g){a.push(g)});
+  a.push(['รวม',s.inc,s.exp,s.net]);
+  var b=[['วันที่','รายการ','หมวดหมู่','ประเภท','จำนวนเงิน','ช่องทาง','บัญชี','หมายเหตุ']];
+  L.forEach(function(t){b.push([dth(t.date),t.name,t.cat,t.type==='inc'?'รายรับ':'รายจ่าย',+t.amt,CH[t.ch],accName(t.acc),t.note])});
+  var w1=XLSX.utils.aoa_to_sheet(a),w2=XLSX.utils.aoa_to_sheet(b);
+  w1['!cols']=[{wch:28},{wch:26},{wch:16},{wch:16}];
+  w2['!cols']=[{wch:12},{wch:30},{wch:30},{wch:10},{wch:14},{wch:18},{wch:28},{wch:30}];
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,w1,'สรุปยอด');XLSX.utils.book_append_sheet(wb,w2,'รายการ');
+  XLSX.writeFile(wb,'รายรับรายจ่าย_'+(E.ch==='all'?'ภาพรวม':E.ch)+'_'+today()+'.xlsx');
+  toast('ส่งออก Excel แล้ว');
+}
+
+/* ---------- เริ่มต้น ---------- */
+load();render();
+</script>
+</body>
+</html>
