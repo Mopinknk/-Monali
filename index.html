@@ -99,14 +99,14 @@ main{margin-left:0;padding:20px 14px 60px}
 
 <script>
 /* ---------- ค่าคงที่ ---------- */
-var KEY='ie_tracker_v1';
+var KEY='ie_tracker_cache_v2';
 var CH={chat:'ขายผ่านแชท',web:'ขายผ่านเว็บไซต์'};
 var EXPC=['ค่าสมัครสมาชิกแอปพรีเมี่ยม','ค่าบัญชีและค่าบริการ','ค่าโฆษณาและการตลาด','ค่าธรรมเนียมธุรกรรม','ค่าใช้จ่ายอื่น ๆ'];
 var INCC=['รายได้จากการขายแอปพรีเมี่ยม','รายรับอื่น ๆ'];
 var MENU=[['dash','Dashboard ภาพรวม'],['chat','ระบบขายผ่านแชท'],['web','ระบบขายผ่านเว็บไซต์'],['form','บันทึกรายรับ-รายจ่าย'],['hist','ประวัติรายการ'],['exp','ส่งออกเอกสาร']];
 
 /* ---------- ตัวช่วย ---------- */
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function uid(){if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)})}
 function today(){return new Date().toLocaleDateString('sv-SE')}
 function iso(back){var d=new Date();d.setDate(d.getDate()-back);return d.toLocaleDateString('sv-SE')}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
@@ -116,35 +116,43 @@ function $(id){return document.getElementById(id)}
 function toast(m){var t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(function(){t.style.display='none'},2600)}
 
 /* ---------- ข้อมูล ---------- */
-function seed(){
-  var acc=[
-    {id:'a1',ch:'chat',name:'ธนาคารกสิกรไทย (แชท)',open:2000},
-    {id:'a2',ch:'chat',name:'พร้อมเพย์ (แชท)',open:500},
-    {id:'a3',ch:'web',name:'ธนาคารไทยพาณิชย์ (เว็บไซต์)',open:3000}
-  ];
-  var T=function(d,type,name,cat,amt,note,ch,ac){return{id:uid(),date:iso(d),type:type,name:name,cat:cat,amt:amt,note:note,ch:ch,acc:ac,img:''}};
-  var tx=[
-    T(0,'inc','ขาย Netflix 1 เดือน','รายได้จากการขายแอปพรีเมี่ยม',149,'ลูกค้า A','chat','a1'),
-    T(1,'inc','ขาย Spotify 3 เดือน','รายได้จากการขายแอปพรีเมี่ยม',299,'','chat','a2'),
-    T(2,'inc','ขาย YouTube Premium','รายได้จากการขายแอปพรีเมี่ยม',99,'','chat','a1'),
-    T(3,'exp','ซื้อบัญชีต้นทาง Netflix','ค่าบัญชีและค่าบริการ',420,'ล็อตเดือนนี้','chat','a1'),
-    T(4,'exp','ยิงโฆษณา Facebook','ค่าโฆษณาและการตลาด',350,'','chat','a1'),
-    T(6,'inc','ขาย Canva Pro','รายได้จากการขายแอปพรีเมี่ยม',189,'','chat','a2'),
-    T(0,'inc','ออเดอร์เว็บ #1021','รายได้จากการขายแอปพรีเมี่ยม',259,'','web','a3'),
-    T(1,'inc','ออเดอร์เว็บ #1020','รายได้จากการขายแอปพรีเมี่ยม',129,'','web','a3'),
-    T(2,'exp','ค่าสมัคร ChatGPT Plus','ค่าสมัครสมาชิกแอปพรีเมี่ยม',700,'','web','a3'),
-    T(3,'exp','ค่าธรรมเนียมรับชำระเงิน','ค่าธรรมเนียมธุรกรรม',45,'','web','a3'),
-    T(5,'inc','ออเดอร์เว็บ #1018','รายได้จากการขายแอปพรีเมี่ยม',349,'','web','a3'),
-    T(8,'exp','ค่าโดเมนและโฮสต์','ค่าใช้จ่ายอื่น ๆ',390,'รายปี','web','a3'),
-    T(40,'inc','ออเดอร์เว็บ #0950','รายได้จากการขายแอปพรีเมี่ยม',199,'','web','a3'),
-    T(45,'exp','ซื้อบัญชีต้นทาง Spotify','ค่าบัญชีและค่าบริการ',280,'','chat','a1')
-  ];
-  return{acc:acc,tx:tx};
-}
 var S;
-function load(){try{var r=localStorage.getItem(KEY);if(r){S=JSON.parse(r);fixS();return}}catch(e){}S=seed();fixS();save(true)}
+var SB={url:'https://vwgysbjieksxkramurfp.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3Z3lzYmppZWtzeGtyYW11cmZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4MDIwNzMsImV4cCI6MjExMDM3ODA3M30.c5WRrjgYDYXW7TvsAG-_gW-DKXuMOBf6zSbWs69HxgI',owner:'fadf6bf6-37d3-45f8-b5ba-7ed0733d1de9'};
 function fixS(){if(!S.shop)S.shop={name:'',logo:''}}
-function save(q){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){if(!q)toast('บันทึกไม่สำเร็จ พื้นที่จัดเก็บเต็ม ลองลบรูปหรือรายการเก่า');return false}}
+function cache(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function fail(e){console.error(e);toast('ดำเนินการไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตและการตั้งค่า Supabase')}
+function api(method,path,body,hdr){
+  var h={apikey:SB.key,Authorization:'Bearer '+SB.key,'Content-Type':'application/json',Prefer:'return=minimal'};
+  if(hdr)for(var k in hdr)h[k]=hdr[k];
+  return fetch(SB.url+'/rest/v1/'+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined}).then(function(r){
+    if(!r.ok)return r.text().then(function(t){throw new Error(r.status+' '+t)});
+    return r.text().then(function(t){return t?JSON.parse(t):null});
+  });
+}
+function getAll(path){
+  var out=[];
+  function pg(o){return api('GET',path+'&limit=1000&offset='+o).then(function(r){r=r||[];out=out.concat(r);return r.length===1000?pg(o+1000):out})}
+  return pg(0);
+}
+function fromAcc(r){return{id:r.id,ch:r.channel,name:r.name,open:Number(r.opening_balance)}}
+function fromTx(r){return{id:r.id,date:r.tx_date,type:r.type,name:r.name,cat:r.category,amt:Number(r.amount),note:r.note||'',ch:r.channel,acc:r.account_id,hasImg:!!r.has_image}}
+function pull(){
+  return Promise.all([
+    api('GET','shop_settings?select=name,logo'),
+    getAll('accounts?select=*&order=created_at.asc,id.asc'),
+    getAll('transactions?select=id,tx_date,type,name,category,amount,note,channel,account_id,has_image&order=tx_date.desc,created_at.desc,id.asc')
+  ]).then(function(r){
+    var sh=(r[0]&&r[0][0])||{};
+    S={shop:{name:sh.name||'',logo:sh.logo||''},acc:r[1].map(fromAcc),tx:r[2].map(fromTx)};
+    cache();
+  });
+}
+function init(){
+  S={shop:{name:'',logo:''},acc:[],tx:[]};
+  try{var r=localStorage.getItem(KEY);if(r){S=JSON.parse(r);fixS()}}catch(e){}
+  render();
+  pull().then(function(){if(view!=='form'&&!$('modalRoot').innerHTML)render();else drawBrand()}).catch(function(e){console.error(e);toast('เชื่อมต่อ Supabase ไม่สำเร็จ กำลังแสดงข้อมูลที่เก็บไว้ในเครื่อง')});
+}
 function sum(list){var i=0,e=0;list.forEach(function(t){if(t.type==='inc')i+=+t.amt;else e+=+t.amt});return{inc:i,exp:e,net:i-e}}
 function accBal(a){var s=sum(S.tx.filter(function(t){return t.acc===a.id}));return{inc:s.inc,exp:s.exp,bal:(+a.open||0)+s.net}}
 function chBal(ch){return S.acc.filter(function(a){return a.ch===ch}).reduce(function(x,a){return x+accBal(a).bal},0)}
@@ -152,13 +160,13 @@ function accName(id){var a=S.acc.find(function(x){return x.id===id});return a?a.
 function inPeriod(t,p,v){return p==='all'||!v||t.date.indexOf(v)===0}
 
 /* ---------- สถานะหน้า ---------- */
-var view='dash',editId=null,preset='chat',formImg='';
+var view='dash',editId=null,preset='chat',formImg='',imgTouched=false;
 var D={scope:'all',p:'month',v:today().slice(0,7)};
 var H={q:'',from:'',to:'',type:'',cat:'',ch:''};
 var E={ch:'all',from:'',to:''};
 
 function toggleSide(){$('side').classList.toggle('open')}
-function go(v,id,ch){view=v;if(v==='form'){editId=id||null;if(ch)preset=ch;if(!id)formImg='';else{var t=S.tx.find(function(x){return x.id===id});formImg=t?t.img||'':''}}
+function go(v,id,ch){view=v;if(v==='form'){editId=id||null;if(ch)preset=ch;formImg='';imgTouched=false;if(id){var t=S.tx.find(function(x){return x.id===id});if(t&&t.hasImg){api('GET','transactions?id=eq.'+id+'&select=image').then(function(r){if(editId===id&&r&&r[0]){formImg=r[0].image||'';if(view==='form'&&$('prev'))showPrev()}}).catch(function(){})}}}
   $('side').classList.remove('open');render();window.scrollTo(0,0)}
 function drawBrand(){
   var sh=S.shop;
@@ -193,8 +201,10 @@ function pickLogo(inp){
   r.readAsDataURL(f);
 }
 function saveShop(){
-  S.shop={name:$('sn').value.trim(),logo:tmpLogo};
-  if(save()){closeM();toast('บันทึกข้อมูลร้านแล้ว');render()}
+  var sh={name:$('sn').value.trim(),logo:tmpLogo};
+  api('POST','shop_settings?on_conflict=owner_id',{owner_id:SB.owner,name:sh.name,logo:sh.logo},{Prefer:'resolution=merge-duplicates,return=minimal'}).then(function(){
+    S.shop=sh;cache();closeM();toast('บันทึกข้อมูลร้านแล้ว');render();
+  }).catch(fail);
 }
 function render(){
   drawBrand();
@@ -209,7 +219,7 @@ function modal(h){$('modalRoot').innerHTML='<div class="ov" onclick="if(event.ta
 function closeM(){$('modalRoot').innerHTML=''}
 var cfCb=null;
 function confirmBox(msg,cb){cfCb=cb;modal('<h3>ยืนยันการดำเนินการ</h3><p>'+msg+'</p><div class="acts"><button class="btn o" onclick="closeM()">ยกเลิก</button><button class="btn" onclick="var c=cfCb;closeM();c&&c()">ยืนยัน</button></div>')}
-function viewImg(id){var t=S.tx.find(function(x){return x.id===id});if(t&&t.img)modal('<img src="'+t.img+'" style="width:100%;border-radius:8px"><div class="acts"><button class="btn o" onclick="closeM()">ปิด</button></div>')}
+function viewImg(id){api('GET','transactions?id=eq.'+id+'&select=image').then(function(r){var im=r&&r[0]&&r[0].image;if(im)modal('<img src="'+im+'" style="width:100%;border-radius:12px"><div class="acts"><button class="btn o" onclick="closeM()">ปิด</button></div>');else toast('ไม่พบรูปภาพ')}).catch(fail)}
 
 /* ---------- Dashboard ---------- */
 function setDash(k,val){D[k]=val;
@@ -243,7 +253,7 @@ function rDash(){
 function txRow(t,showCh){
   return '<tr><td>'+dth(t.date)+'</td><td>'+esc(t.name)+'</td><td>'+esc(t.cat)+'</td><td><span class="tag '+(t.type==='inc'?'i':'e')+'">'+(t.type==='inc'?'รายรับ':'รายจ่าย')+'</span></td><td class="r '+(t.type==='inc'?'inc':'exp')+'">'+money(t.amt)+'</td>'+
   '<td>'+(showCh?CH[t.ch]+'<br>':'')+'<span style="color:var(--mute);font-size:13px">'+esc(accName(t.acc))+'</span></td>'+
-  '<td>'+esc(t.note)+(t.img?'<br><img class="thumb" src="'+t.img+'" onclick="viewImg(\''+t.id+'\')">':'')+'</td>'+
+  '<td>'+esc(t.note)+(t.hasImg?'<br><button class="btn o s" style="margin-top:6px" onclick="viewImg(\''+t.id+'\')">ดูรูป</button>':'')+'</td>'+
   '<td style="white-space:nowrap"><button class="btn o s" onclick="go(\'form\',\''+t.id+'\')">แก้ไข</button> <button class="btn d s" onclick="delTx(\''+t.id+'\')">ลบ</button></td></tr>';
 }
 function rChan(ch){
@@ -265,16 +275,24 @@ function accForm(id,ch){
 function saveAcc(id,ch){
   var n=$('an').value.trim(),o=parseFloat($('ao').value)||0;
   if(!n){toast('กรุณากรอกชื่อบัญชี');return}
-  if(id){var a=S.acc.find(function(x){return x.id===id});a.name=n;a.open=o}else S.acc.push({id:uid(),ch:ch,name:n,open:o});
-  if(save()){closeM();toast('บันทึกบัญชีแล้ว');render()}
+  var nid=id||uid();
+  var p=id?api('PATCH','accounts?id=eq.'+id,{name:n,opening_balance:o}):api('POST','accounts',{id:nid,channel:ch,name:n,opening_balance:o});
+  p.then(function(){
+    if(id){var a=S.acc.find(function(x){return x.id===id});a.name=n;a.open=o}else S.acc.push({id:nid,ch:ch,name:n,open:o});
+    cache();closeM();toast('บันทึกบัญชีแล้ว');render();
+  }).catch(fail);
 }
 function delAcc(id){
   if(S.tx.some(function(t){return t.acc===id})){toast('ไม่สามารถลบได้ เพราะบัญชีนี้มีรายการอยู่');return}
-  confirmBox('ต้องการลบบัญชีนี้ใช่หรือไม่',function(){S.acc=S.acc.filter(function(a){return a.id!==id});save();toast('ลบบัญชีแล้ว');render()});
+  confirmBox('ต้องการลบบัญชีนี้ใช่หรือไม่',function(){
+    api('DELETE','accounts?id=eq.'+id).then(function(){S.acc=S.acc.filter(function(a){return a.id!==id});cache();toast('ลบบัญชีแล้ว');render()}).catch(fail);
+  });
 }
 function delTx(id){
   var t=S.tx.find(function(x){return x.id===id});
-  confirmBox('ต้องการลบรายการ "'+esc(t.name)+'" จำนวน '+money(t.amt)+' บาท ใช่หรือไม่ การลบไม่สามารถย้อนกลับได้',function(){S.tx=S.tx.filter(function(x){return x.id!==id});save();toast('ลบรายการแล้ว');render()});
+  confirmBox('ต้องการลบรายการ "'+esc(t.name)+'" จำนวน '+money(t.amt)+' บาท ใช่หรือไม่ การลบไม่สามารถย้อนกลับได้',function(){
+    api('DELETE','transactions?id=eq.'+id).then(function(){S.tx=S.tx.filter(function(x){return x.id!==id});cache();toast('ลบรายการแล้ว');render()}).catch(fail);
+  });
 }
 
 /* ---------- ฟอร์มบันทึกรายการ ---------- */
@@ -305,7 +323,7 @@ function fillAcc(sel){
   $('fa').innerHTML=L.length?L.map(function(a){return '<option value="'+a.id+'"'+(a.id===sel?' selected':'')+'>'+esc(a.name)+'</option>'}).join(''):'<option value="">ยังไม่มีบัญชี (เพิ่มได้ในหน้าระบบของช่องทางนั้น)</option>';
 }
 function showPrev(){
-  $('prev').innerHTML=formImg?'<img src="'+formImg+'"><span style="font-size:12px;color:var(--mute)">ขนาดหลังบีบอัด ~'+Math.round(formImg.length*0.75/1024)+' KB</span> <button class="btn d s" type="button" onclick="formImg=\'\';$(\'fi\').value=\'\';showPrev()">ลบรูป</button>':'';
+  $('prev').innerHTML=formImg?'<img src="'+formImg+'"><span style="font-size:12px;color:var(--mute)">ขนาดหลังบีบอัด ~'+Math.round(formImg.length*0.75/1024)+' KB</span> <button class="btn d s" type="button" onclick="imgTouched=true;formImg=\'\';$(\'fi\').value=\'\';showPrev()">ลบรูป</button>':'';
 }
 function pickImg(inp){
   var f=inp.files[0];if(!f)return;
@@ -317,7 +335,7 @@ function pickImg(inp){
       var M=800,w=im.width,h=im.height,k=Math.min(1,M/Math.max(w,h));
       var c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);
       var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
-      formImg=c.toDataURL('image/jpeg',0.7);showPrev();
+      formImg=c.toDataURL('image/jpeg',0.7);imgTouched=true;showPrev();
     };
     im.onerror=function(){toast('เปิดรูปภาพไม่ได้')};
     im.src=e.target.result;
@@ -325,14 +343,20 @@ function pickImg(inp){
   r.readAsDataURL(f);
 }
 function saveTx(){
-  var o={date:$('fd').value,type:$('ft').value,ch:$('fc').value,acc:$('fa').value,name:$('fn').value.trim(),cat:$('fg').value,amt:parseFloat($('fm').value),note:$('fo').value.trim(),img:formImg};
+  var o={date:$('fd').value,type:$('ft').value,ch:$('fc').value,acc:$('fa').value,name:$('fn').value.trim(),cat:$('fg').value,amt:parseFloat($('fm').value),note:$('fo').value.trim()};
   if(!o.date){toast('กรุณาเลือกวันที่');return}
   if(!o.name){toast('กรุณากรอกชื่อรายการ');return}
   if(!o.acc){toast('กรุณาเลือกบัญชี หากไม่มีให้เพิ่มบัญชีก่อน');return}
   if(!(o.amt>0)){toast('กรุณากรอกจำนวนเงินมากกว่า 0');return}
-  if(editId){var t=S.tx.find(function(x){return x.id===editId});Object.assign(t,o)}else{o.id=uid();S.tx.push(o)}
-  var ch=o.ch;
-  if(save()){toast(editId?'แก้ไขรายการแล้ว':'บันทึกรายการแล้ว');editId=null;formImg='';preset=ch;go('hist')}
+  var row={tx_date:o.date,type:o.type,name:o.name,category:o.cat,amount:o.amt,note:o.note,channel:o.ch,account_id:o.acc};
+  var wasEdit=editId,img=formImg,touched=imgTouched,p;
+  if(wasEdit){if(touched)row.image=img;p=api('PATCH','transactions?id=eq.'+wasEdit,row)}
+  else{o.id=uid();row.id=o.id;row.image=img;p=api('POST','transactions',row)}
+  p.then(function(){
+    if(wasEdit){var t=S.tx.find(function(x){return x.id===wasEdit});Object.assign(t,o);if(touched)t.hasImg=!!img}
+    else{o.hasImg=!!img;S.tx.push(o)}
+    cache();toast(wasEdit?'แก้ไขรายการแล้ว':'บันทึกรายการแล้ว');editId=null;formImg='';imgTouched=false;preset=o.ch;go('hist');
+  }).catch(fail);
 }
 
 /* ---------- ประวัติรายการ ---------- */
@@ -424,7 +448,7 @@ function expXLS(){
 }
 
 /* ---------- เริ่มต้น ---------- */
-load();render();
+init();
 </script>
 </body>
 </html>
