@@ -791,6 +791,7 @@ function parseSlip(t){
   }
   return out;
 }
+var lastOcr='';
 function applySlip(p){
   if(!$('fm'))return;
   var got=[],h='';
@@ -811,6 +812,7 @@ function applySlip(p){
   if(!p.memo)h+='<span class="exp">สลิปนี้ไม่มีโน้ต กรุณากรอกชื่อรายการเอง</span><br>';
   if(p.alts.length)h+='ตัวเลขอื่นที่พบ (กดเพื่อใช้แทนยอดเงิน): '+p.alts.map(function(v){return '<button class="btn o s" type="button" onclick="useAmt('+v+')">'+money(v)+'</button>'}).join('')+'<br>';
   h+='แนบรูปสลิปไว้แล้ว กรุณาตรวจสอบข้อมูลก่อนบันทึก และเลือกช่องทาง บัญชี หมวดหมู่เอง';
+  h+='<details style="margin-top:8px"><summary style="cursor:pointer">ดูข้อความที่ระบบอ่านได้จากรูป</summary><pre style="white-space:pre-wrap;font:12px/1.5 monospace;margin:6px 0 0">'+esc(lastOcr||'(ว่าง)')+'</pre></details>';
   $('scanMsg').innerHTML=h;updRecvHint();
   var fn=$('fn');
   if(!p.memo){fn.classList.add('need');fn.addEventListener('input',function(){fn.classList.remove('need')},{once:true});fn.focus()}
@@ -839,7 +841,7 @@ function scanSlip(inp){
         return Tesseract.createWorker('tha+eng',1,{logger:function(m){if(m.status==='recognizing text')say('กำลังอ่านสลิป '+Math.round(m.progress*100)+'%')}});
       }).then(function(w){worker=w;return w.recognize(o)})
       .then(function(res){return worker.terminate().then(function(){return res})})
-      .then(function(res){applySlip(parseSlip(res.data.text||''))})
+      .then(function(res){lastOcr=res.data.text||'';applySlip(parseSlip(lastOcr))})
       .catch(function(err){
         console.error(err);
         say((err&&err.message==='LOAD'?'โหลดตัวอ่านสลิปไม่สำเร็จ ต้องเชื่อมต่ออินเทอร์เน็ต':'อ่านสลิปไม่สำเร็จ')+' กรุณากรอกข้อมูลเอง (แนบรูปสลิปไว้แล้ว)');
