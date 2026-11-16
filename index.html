@@ -755,6 +755,28 @@ function parseSlip(t){
     cand=cand.filter(function(c){return cleanNm(c).length>=2});
     if(cand.length){out.recvC=cand;out.recv=cleanNm(cand[0])}
   }
+  /* สลิปแบบไม่มีป้ายกำกับ (เช่น K+): บล็อกบน = ผู้โอน, บล็อกล่างใต้ลูกศร = ผู้รับ */
+  if(!out.recv){
+    var bankRe=/ธนาคาร|ธ\.|bank|promptpay|พร้อมเพย์|^[^ก-๙A-Za-z]*$/i,
+        accRe=/(?:[x×\d*]{2,}[\-\s]+){1,}[x×\d*]{1,}|[x×*]{3,}/i,
+        titleRe=/^(นางสาว|น\.\s?ส\.?|นส\.?|นาย|นาง|ด\.[ชญ]\.|เด็กชาย|เด็กหญิง|mr\.?|mrs\.?|ms\.?|miss)\s*\S+/i,
+        stopRe=/จำนวน|ค่าธรรมเนียม|เลขที่รายการ|สแกน|โอนเงิน|สำเร็จ|บาท|fee|amount/i;
+    var blocks=[];
+    for(var bi=0;bi<lines.length;bi++){
+      if(!accRe.test(lines[bi])||/\d{1,2}:\d{2}/.test(lines[bi]))continue;
+      var nm='';
+      for(var bj=bi-1;bj>=0&&bj>=bi-3;bj--){
+        var ln=lines[bj];
+        if(accRe.test(ln)||stopRe.test(ln))break;
+        if(bankRe.test(ln))continue;
+        if(/[A-Za-zก-๙]{3,}/.test(ln)){nm=ln;break}
+      }
+      if(nm)blocks.push(nm);
+    }
+    var tn=lines.filter(function(l){return titleRe.test(l)&&!stopRe.test(l)});
+    var pick2=blocks.length>=2?blocks[blocks.length-1]:(tn.length>=2?tn[tn.length-1]:'');
+    if(pick2&&cleanNm(pick2).length>=2){out.recv=cleanNm(pick2);out.recvC=[pick2]}
+  }
   /* โน้ต / บันทึกช่วยจำ */
   var lab=/(บันทึกช่วยจำ|บันทึก|ข้อความ|memo|note|หมายเหตุ|โน้ต)\s*[:：]?\s*(.*)$/i;
   var stop=/จาก|ไปยัง|ถึง|from|จำนวน|ค่าธรรมเนียม|fee|amount|รหัส|เลขที่|ref|บาท|\d{1,2}:\d{2}/i;
