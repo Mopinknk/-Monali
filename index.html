@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ระบบบันทึกรายรับ-รายจ่าย</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -11,7 +11,7 @@
 *{box-sizing:border-box}
 html,body{margin:0}
 body{font-family:'Sarabun','Noto Sans Thai',Tahoma,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
-body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(420px 420px at 100% 0,#ffe3ec 0,transparent 70%),radial-gradient(400px 400px at 0 100%,#dff0ff 0,transparent 70%),radial-gradient(300px 300px at 85% 95%,#e8f4ff 0,transparent 70%)}
+body:before{content:"";position:fixed;top:0;right:0;bottom:0;left:0;z-index:-1;pointer-events:none;background:radial-gradient(420px 420px at 100% 0,#ffe3ec 0,transparent 70%),radial-gradient(400px 400px at 0 100%,#dff0ff 0,transparent 70%),radial-gradient(300px 300px at 85% 95%,#e8f4ff 0,transparent 70%)}
 .side{position:fixed;left:14px;top:14px;bottom:14px;width:226px;background:var(--card);border-radius:24px;box-shadow:0 4px 24px rgba(90,110,150,.08);padding:28px 14px;z-index:20;overflow-y:auto}
 .brand{font-family:'Prompt','Sarabun',sans-serif;font-weight:500;font-size:15px;color:var(--dark);padding:0 12px 24px;line-height:1.35}
 .brand{cursor:pointer}.brand .lg{display:block;width:46px;height:46px;border-radius:14px;object-fit:cover;margin-bottom:12px;background:linear-gradient(135deg,#ffb8cf,#a9d6ff)}.side .set{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
@@ -64,7 +64,7 @@ tr:last-child td{border-bottom:0}
 .empty{text-align:center;color:var(--mute);padding:36px 0}
 .thumb{width:38px;height:38px;object-fit:cover;border-radius:10px;cursor:pointer;margin-top:6px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:18px 22px}
-.ov{position:fixed;inset:0;background:rgba(74,63,68,.28);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.ov{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(74,63,68,.28);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
 .md{background:#fff;border-radius:26px;box-shadow:0 16px 48px rgba(80,50,60,.18);padding:28px;width:100%;max-width:420px;max-height:90vh;overflow:auto}
 .md h3{font-family:'Prompt','Sarabun',sans-serif;margin:0 0 18px;font-size:17px;font-weight:500}
 .md .f{margin-bottom:14px}
@@ -85,7 +85,7 @@ main{margin-left:0;padding:20px 14px 60px}
 .row .btn{width:100%}
 }
 
-.lg-wrap{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:16px;background:radial-gradient(420px 420px at 100% 0,#ffe3ec 0,transparent 70%),radial-gradient(400px 400px at 0 100%,#dff0ff 0,transparent 70%),#fbfcff}
+.lg-wrap{position:fixed;top:0;right:0;bottom:0;left:0;z-index:100;display:none;align-items:center;justify-content:center;padding:16px;background:radial-gradient(420px 420px at 100% 0,#ffe3ec 0,transparent 70%),radial-gradient(400px 400px at 0 100%,#dff0ff 0,transparent 70%),#fbfcff}
 .lg-card{width:100%;max-width:380px;background:#fff;border-radius:26px;padding:32px;box-shadow:0 8px 40px rgba(90,110,150,.14)}
 .lg-logo{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#ffb8cf,#a9d6ff);margin-bottom:14px}
 .lg-card .f{margin-bottom:14px}
@@ -93,6 +93,83 @@ main{margin-left:0;padding:20px 14px 60px}
 .need{border-color:var(--rose)!important;box-shadow:0 0 0 4px #ffe3ec!important}
 #scanMsg{font-size:14px;color:var(--mute);line-height:1.8}
 #scanMsg .btn{margin:0 4px 4px 0}
+
+.bnav{display:none}
+@media(max-width:700px){
+main{padding:16px 12px 104px}
+h1{font-size:21px}
+.sub{margin-bottom:16px}
+input,select,textarea{font-size:16px;padding:12px 14px}
+.btn{min-height:44px;padding:10px 20px}
+.btn.s{min-height:38px;padding:6px 14px}
+.grid{grid-template-columns:1fr 1fr;gap:10px}
+.card{padding:14px;border-radius:18px}
+.card .v{font-size:19px}
+.row{gap:10px}
+.row .f{min-width:calc(50% - 5px);flex:1 1 calc(50% - 5px)}
+.row .f[style*="flex:1"]{min-width:100%}
+.two{gap:12px}
+.acts .btn{flex:1}
+.box{padding:16px 14px}
+#toast{bottom:92px}
+.bnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:18;background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:6px;justify-content:space-around}
+.bnav button{flex:1;border:0;background:none;font:inherit;font-size:13px;color:var(--mute);padding:10px 2px;border-radius:12px;line-height:1.2;margin:0 2px}
+.bnav button.on{color:#2a78b8;background:var(--soft);font-weight:600}
+table.tx,table.tx tbody{display:block;width:100%}
+table.tx thead{display:none}
+table.tx tr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"name amt" "date type" "cat acc" "note note" "act act";gap:3px 12px;padding:12px 2px;border-bottom:1px solid var(--line)}
+table.tx tr:last-child{border-bottom:0}
+table.tx td{display:block;padding:0;border:0;min-width:0}
+table.tx tbody tr:hover td{background:none}
+table.tx td:nth-child(1){grid-area:date;color:var(--mute);font-size:13px}
+table.tx td:nth-child(1) br{display:none}
+table.tx td:nth-child(1) span{margin-left:6px}
+table.tx td:nth-child(2){grid-area:name;font-weight:600;color:var(--dark)}
+table.tx td:nth-child(3){grid-area:cat;font-size:13px;color:var(--mute)}
+table.tx td:nth-child(4){grid-area:type;text-align:right}
+table.tx td:nth-child(5){grid-area:amt;text-align:right;font-weight:600;font-size:16px}
+table.tx td:nth-child(6){grid-area:acc;text-align:right;font-size:13px}
+table.tx td:nth-child(7){grid-area:note;font-size:13px;color:var(--mute)}
+table.tx td:nth-child(7):empty{display:none}
+table.tx td:nth-child(8){grid-area:act;margin-top:6px}
+table.tx td.empty{grid-area:1/1/6/3}
+}
+
+/* ---- ปรับปรุง: ฟอร์ม/มือถือ ---- */
+.seg{display:flex;gap:6px;background:#f1f5fb;border-radius:14px;padding:4px}
+.seg button{flex:1;border:0;background:none;font:inherit;font-size:15px;padding:10px 8px;border-radius:11px;color:var(--mute);cursor:pointer;transition:all .15s}
+.seg button.on.exp{background:#fff;color:var(--exp);font-weight:600;box-shadow:0 2px 8px rgba(217,86,122,.18)}
+.seg button.on.inc{background:#fff;color:var(--inc);font-weight:600;box-shadow:0 2px 8px rgba(47,134,198,.2)}
+.rhint{font-size:12px;color:var(--inc);padding-left:4px;line-height:1.5}
+.rhint:empty{display:none}
+.okb{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#e6f6ec;color:#2b6b45;border-radius:16px;padding:12px 16px;margin:0 0 16px;max-width:720px;font-size:14px}
+.okb a{color:#2a78b8;cursor:pointer;text-decoration:underline;white-space:nowrap}
+input[type=file]::file-selector-button{font:inherit;font-size:13px;border:0;background:var(--soft);color:#2a78b8;padding:7px 14px;border-radius:99px;margin-right:10px;cursor:pointer}
+.fx{display:contents}.ftog{display:none}
+@media(max-width:700px){
+.top .btn{display:none}
+.bnav{padding-bottom:calc(6px + env(safe-area-inset-bottom))}
+main{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+#toast{bottom:calc(92px + env(safe-area-inset-bottom))}
+.frm .two{grid-template-columns:1fr 1fr;gap:12px}
+.frm .two .f{min-width:0;margin:0}
+.frm .c-ft{order:1;grid-column:1/-1}.frm .c-am{order:2;grid-column:1/-1}.frm .c-nm{order:3;grid-column:1/-1}.frm .c-cg{order:4;grid-column:1/-1}
+.frm .c-d{order:5}.frm .c-tm{order:6}.frm .c-ch{order:7}.frm .c-ac{order:8}.frm .c-im{order:9;grid-column:1/-1}
+.frm #fm{font-size:24px;font-weight:600;padding:14px;color:var(--dark)}
+.seg button{padding:13px 8px;font-size:16px}
+.frm .stk{position:sticky;bottom:calc(66px + env(safe-area-inset-bottom));background:linear-gradient(to top,#fff 78%,rgba(255,255,255,0));margin:14px -14px -16px;padding:14px 14px 16px;z-index:5;border-radius:0 0 20px 20px;flex-wrap:nowrap}
+.frm .stk .btn:first-child{flex:2}
+.ftog{display:block;width:100%;margin-top:2px}
+.hrow .fx{display:none;width:100%}
+.hrow .fx.open{display:flex;flex-wrap:wrap;gap:10px}
+.hrow .f[style*="flex:1"]{min-width:100%}
+.tw table:not(.tx) th,.tw table:not(.tx) td{padding:10px 8px;font-size:13px}
+.tw table:not(.tx) th,.tw table:not(.tx) td:first-child{white-space:nowrap}
+table.tx td:nth-child(8) .btn{flex:none}
+table.tx td:nth-child(8){display:flex;gap:8px}
+#scanMsg{font-size:13px;line-height:1.7}
+.okb{border-radius:14px}
+}
 </style>
 </head>
 <body>
@@ -102,6 +179,7 @@ main{margin-left:0;padding:20px 14px 60px}
   <div class="nav set"><button onclick="shopForm()">ตั้งค่าร้าน</button><button onclick="logout()">ออกจากระบบ</button></div>
 </aside>
 <div class="top"><b id="topTitle">Dashboard ภาพรวม</b><button class="btn o s" onclick="toggleSide()">เมนู</button></div>
+<nav class="bnav" id="bnav"><button id="bn_dash" onclick="go('dash')">ภาพรวม</button><button id="bn_form" onclick="go('form')">บันทึก</button><button id="bn_hist" onclick="go('hist')">ประวัติ</button><button onclick="toggleSide()">เมนู</button></nav>
 <main id="main"></main>
 <div id="login" class="lg-wrap"><div class="lg-card"><div class="lg-logo"></div><h1 style="font-size:22px">เข้าสู่ระบบ</h1><p class="sub" style="margin-bottom:20px">สำหรับผู้ดูแลระบบ</p><div class="f"><label>อีเมล</label><input id="le" type="email" autocomplete="username"></div><div class="f"><label>รหัสผ่าน</label><input id="lp" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div><p id="lerr" class="lerr"></p><button id="lb" class="btn" style="width:100%" onclick="doLogin()">เข้าสู่ระบบ</button></div></div>
 <div id="toast"></div>
@@ -219,7 +297,9 @@ var H={q:'',from:'',to:'',type:'',cat:'',ch:''};
 var E={ch:'all',from:'',to:''};
 
 function toggleSide(){$('side').classList.toggle('open')}
-function go(v,id,ch){view=v;if(v==='form'){editId=id||null;if(ch)preset=ch;formImg='';imgTouched=false;if(id){var t=S.tx.find(function(x){return x.id===id});if(t&&t.hasImg){api('GET','transactions?id=eq.'+id+'&select=image').then(function(r){if(editId===id&&r&&r[0]){return resolveImg(r[0].image||'').then(function(im){if(editId===id){formImg=im;if(view==='form'&&$('prev'))showPrev()}})}}).catch(function(){})}}}
+var slipRecv='',typeTouched=false,backView='',backY=0,lastAcc='',savedMsg='';
+function goBack(){var v=backView||'hist',y=backY;backView='';go(v);setTimeout(function(){window.scrollTo(0,y)},30)}
+function go(v,id,ch){var prev=view;view=v;if(v==='form'){slipRecv='';typeTouched=false;editId=id||null;if(id){backView=(prev&&prev!=='form')?prev:'hist';backY=window.scrollY||0}else{backView='';backY=0}if(ch)preset=ch;formImg='';imgTouched=false;if(id){var t=S.tx.find(function(x){return x.id===id});if(t&&t.hasImg){api('GET','transactions?id=eq.'+id+'&select=image').then(function(r){if(editId===id&&r&&r[0]){return resolveImg(r[0].image||'').then(function(im){if(editId===id){formImg=im;if(view==='form'&&$('prev'))showPrev()}})}}).catch(function(){})}}}
   $('side').classList.remove('open');render();window.scrollTo(0,0)}
 function drawBrand(){
   var sh=S.shop;
@@ -262,6 +342,7 @@ function saveShop(){
 function render(){
   drawBrand();
   $('nav').innerHTML=MENU.map(function(m){return '<button class="'+(view===m[0]?'on':'')+'" onclick="go(\''+m[0]+'\')">'+m[1]+'</button>'}).join('');
+  ['dash','form','hist'].forEach(function(k){var b=$('bn_'+k);if(b)b.className=view===k?'on':''});
   $('topTitle').textContent=(MENU.find(function(m){return m[0]===view})||[])[1];
   var f={dash:rDash,chat:function(){rChan('chat')},web:function(){rChan('web')},form:rForm,hist:rHist,cats:rCats,exp:rExp}[view];
   f();
@@ -269,8 +350,13 @@ function render(){
 
 
 /* ---------- จัดการหมวดหมู่ ---------- */
+var RNKEY='ie_recv_names_v1';
+function rnLocal(){try{var a=JSON.parse(localStorage.getItem(RNKEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+function rnSaveLocal(L){try{localStorage.setItem(RNKEY,JSON.stringify(L))}catch(e){}}
+function rnames(){var a=((S&&S.cats&&S.cats.rn)||[]).slice();rnLocal().forEach(function(n){if(!a.some(function(x){return sameName(x,n)}))a.push(n)});return a}
+function catsObj(rn){return{inc:INCC.slice(),exp:EXPC.slice(),rn:(rn||rnames()).slice()}}
 function saveCats(){
-  S.cats={inc:INCC.slice(),exp:EXPC.slice()};
+  S.cats=catsObj();
   return api('POST','shop_settings?on_conflict=owner_id',{owner_id:SB.owner,name:S.shop.name,logo:S.shop.logo,categories:S.cats},{Prefer:'resolution=merge-duplicates,return=minimal'}).then(function(){cache()});
 }
 function catErr(e){
@@ -289,14 +375,14 @@ function rCats(){
     return '<div class="box" style="max-width:720px"><h2>'+title+'</h2><div class="tw"><table><thead><tr><th>ชื่อหมวดหมู่</th><th class="r">ใช้งาน</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
     '<div class="row" style="margin-top:12px;gap:8px"><input id="nc_'+t+'" placeholder="ชื่อหมวดหมู่ใหม่" style="flex:1" onkeydown="if(event.key===\'Enter\')addCat(\''+t+'\')"><button class="btn s" onclick="addCat(\''+t+'\')">เพิ่มหมวดหมู่</button></div></div>';
   }
-  $('main').innerHTML='<h1>จัดการหมวดหมู่</h1><p class="sub">เพิ่ม แก้ไขชื่อ หรือลบหมวดหมู่รายรับและรายจ่าย การแก้ชื่อจะอัปเดตรายการเดิมที่ใช้หมวดหมู่นี้ให้อัตโนมัติ</p>'+box('inc','หมวดหมู่รายรับ')+box('exp','หมวดหมู่รายจ่าย');
+  $('main').innerHTML='<h1>จัดการหมวดหมู่</h1><p class="sub">เพิ่ม แก้ไขชื่อ หรือลบหมวดหมู่รายรับและรายจ่าย การแก้ชื่อจะอัปเดตรายการเดิมที่ใช้หมวดหมู่นี้ให้อัตโนมัติ</p>'+box('inc','หมวดหมู่รายรับ')+box('exp','หมวดหมู่รายจ่าย')+rnBox();
 }
 function addCat(t){
   var el=$('nc_'+t),v=el.value.trim();
   if(!v){toast('กรุณากรอกชื่อหมวดหมู่');return}
   if(INCC.concat(EXPC).indexOf(v)>=0){toast('มีหมวดหมู่ชื่อนี้อยู่แล้ว');return}
   catList(t).push(v);
-  saveCats().then(function(){toast('เพิ่มหมวดหมู่แล้ว');rCats()}).catch(function(e){catList(t).pop();S.cats={inc:INCC.slice(),exp:EXPC.slice()};catErr(e);rCats()});
+  saveCats().then(function(){toast('เพิ่มหมวดหมู่แล้ว');rCats()}).catch(function(e){catList(t).pop();S.cats=catsObj();catErr(e);rCats()});
 }
 var renCtx=null;
 function renCat(t,i){
@@ -314,7 +400,7 @@ function doRenCat(){
   saveCats().then(function(){
     if(!used)return;
     return api('PATCH','transactions?type=eq.'+t+'&category=eq.'+encodeURIComponent(old),{category:v}).then(function(){S.tx.forEach(function(x){if(x.type===t&&x.cat===old)x.cat=v})});
-  }).then(function(){cache();closeM();toast('แก้ไขหมวดหมู่แล้ว');rCats()}).catch(function(e){L[i]=old;S.cats={inc:INCC.slice(),exp:EXPC.slice()};closeM();catErr(e)});
+  }).then(function(){cache();closeM();toast('แก้ไขหมวดหมู่แล้ว');rCats()}).catch(function(e){L[i]=old;S.cats=catsObj();closeM();catErr(e)});
 }
 function delCat(t,i){
   var L=catList(t),c=L[i];
@@ -322,7 +408,7 @@ function delCat(t,i){
   var n=S.tx.filter(function(x){return x.type===t&&x.cat===c}).length;
   confirmBox('ลบหมวดหมู่ “'+esc(c)+'” ?'+(n?'<br>มี '+n+' รายการที่ใช้หมวดหมู่นี้ รายการเดิมจะยังคงอยู่และยังแสดงชื่อหมวดหมู่เดิม':''),function(){
     L.splice(i,1);
-    saveCats().then(function(){toast('ลบหมวดหมู่แล้ว');rCats()}).catch(function(e){L.splice(i,0,c);S.cats={inc:INCC.slice(),exp:EXPC.slice()};catErr(e);rCats()});
+    saveCats().then(function(){toast('ลบหมวดหมู่แล้ว');rCats()}).catch(function(e){L.splice(i,0,c);S.cats=catsObj();catErr(e);rCats()});
   });
 }
 
@@ -382,6 +468,47 @@ function migrateImgs(){
   msg('เริ่มย้ายรูป...');step();
 }
 
+
+/* ---------- ชื่อผู้รับที่ถือเป็นรายรับ ---------- */
+function cleanNm(x){return String(x||'').replace(/^(นางสาว|น\.ส\.|นส\.|นาย|นาง|คุณ|mr\.?|mrs\.?|ms\.?|miss)\s*/i,'').replace(/\s+/g,' ').trim().slice(0,60)}
+function nmKey(x){return cleanNm(x).toLowerCase().replace(/[^a-zก-๙]/g,'')}
+function lev(a,b){var m=a.length,n=b.length,d=[],i,j;for(i=0;i<=m;i++){d[i]=[i]}for(j=0;j<=n;j++)d[0][j]=j;for(i=1;i<=m;i++)for(j=1;j<=n;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a.charAt(i-1)===b.charAt(j-1)?0:1));return d[m][n]}
+function sameName(a,b){
+  a=nmKey(a);b=nmKey(b);
+  if(a.length<3||b.length<3)return false;
+  if(a.indexOf(b)>-1||b.indexOf(a)>-1)return true;
+  return lev(a,b)/Math.max(a.length,b.length)<=0.25;
+}
+function isIncRecv(p){
+  var L=rnames();
+  return (p.recvC||[]).some(function(c){return L.some(function(n){return sameName(n,c)})});
+}
+function addRecvName(n){
+  n=cleanNm(n);if(!n||nmKey(n).length<3)return;
+  if(rnames().some(function(x){return sameName(x,n)}))return;
+  var rn=rnames().concat([n]);
+  rnSaveLocal(rn);S.cats=catsObj(rn);
+  saveCats().catch(function(e){if(e&&e.message==='NOAUTH')return;console.error(e);toast('จำชื่อผู้รับไว้ในเครื่องนี้แล้ว แต่บันทึกขึ้นระบบไม่สำเร็จ')});
+}
+function rnBox(){
+  var L=rnames();
+  var rows=L.map(function(n,i){return '<tr><td>'+esc(n)+'</td><td style="text-align:right"><button class="btn d s" onclick="delRn('+i+')">ลบ</button></td></tr>'}).join('')||'<tr><td colspan="2" class="empty">ยังไม่มีชื่อที่จำไว้</td></tr>';
+  return '<div class="box" style="max-width:720px"><h2>ชื่อผู้รับในสลิปที่ถือเป็นรายรับ</h2><p class="sub" style="margin-bottom:12px">ถ้าสลิปที่สแกนมีชื่อผู้รับตรงกับรายการนี้ ระบบจะตั้งประเภทเป็น “รายรับ” ให้อัตโนมัติ ชื่อจะถูกจำเองเมื่อคุณบันทึกสลิปเป็นรายรับ หรือจะเพิ่มเองตรงนี้ก็ได้</p><div class="tw"><table><tbody>'+rows+'</tbody></table></div><div class="row" style="margin-top:12px;gap:8px"><input id="nrn" placeholder="ชื่อผู้รับตามที่แสดงในสลิป" style="flex:1" onkeydown="if(event.key===\'Enter\')addRn()"><button class="btn s" onclick="addRn()">เพิ่มชื่อ</button></div></div>';
+}
+function addRn(){
+  var v=cleanNm($('nrn').value);
+  if(nmKey(v).length<3){toast('กรุณากรอกชื่ออย่างน้อย 3 ตัวอักษร');return}
+  if(rnames().some(function(x){return sameName(x,v)})){toast('มีชื่อนี้อยู่แล้ว');return}
+  var old=rnames().slice(),nw=old.concat([v]);
+  rnSaveLocal(nw);S.cats=catsObj(nw);
+  saveCats().then(function(){toast('เพิ่มชื่อแล้ว');rCats()}).catch(function(e){rnSaveLocal(old);S.cats=catsObj(old);catErr(e);rCats()});
+}
+function delRn(i){
+  var old=rnames().slice(),rn=old.slice();rn.splice(i,1);
+  rnSaveLocal(rn);S.cats=catsObj(rn);
+  saveCats().then(function(){toast('ลบชื่อแล้ว');rCats()}).catch(function(e){rnSaveLocal(old);S.cats=catsObj(old);catErr(e);rCats()});
+}
+
 /* ---------- Modal ---------- */
 function modal(h){$('modalRoot').innerHTML='<div class="ov" onclick="if(event.target===this)closeM()"><div class="md">'+h+'</div></div>'}
 function closeM(){$('modalRoot').innerHTML=''}
@@ -433,7 +560,7 @@ function rChan(ch){
   $('main').innerHTML='<h1>ระบบ'+CH[ch]+'</h1><p class="sub">ข้อมูลรายรับ รายจ่าย และบัญชีรับเงินของช่องทางนี้โดยเฉพาะ</p>'+
   '<div class="grid"><div class="card"><div class="l">รายรับ</div><div class="v inc">'+money(s.inc)+'</div></div><div class="card"><div class="l">รายจ่าย</div><div class="v exp">'+money(s.exp)+'</div></div><div class="card"><div class="l">ยอดคงเหลือ</div><div class="v">'+money(chBal(ch))+'</div><div class="n">รวมยอดตั้งต้นของบัญชี</div></div></div>'+
   '<div class="box"><div class="row" style="margin-bottom:10px;justify-content:space-between"><h2 style="margin:0">บัญชีรับเงิน</h2><button class="btn s" onclick="accForm(null,\''+ch+'\')">เพิ่มบัญชี</button></div><div class="tw"><table><thead><tr><th>ชื่อบัญชี</th><th class="r">ยอดตั้งต้น</th><th class="r">รับเข้า</th><th class="r">จ่ายออก</th><th class="r">คงเหลือ</th><th></th></tr></thead><tbody>'+ar+'</tbody></table></div></div>'+
-  '<div class="box"><div class="row" style="margin-bottom:10px;justify-content:space-between"><h2 style="margin:0">รายการล่าสุด</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn s" onclick="go(\'form\',null,\''+ch+'\')">เพิ่มรายการ</button><button class="btn o s" onclick="H={q:\'\',from:\'\',to:\'\',type:\'\',cat:\'\',ch:\''+ch+'\'};go(\'hist\')">ดูทั้งหมด</button></div></div><div class="tw"><table><thead><tr><th>วันที่</th><th>รายการ</th><th>หมวดหมู่</th><th>ประเภท</th><th class="r">จำนวนเงิน</th><th>บัญชี</th><th>หมายเหตุ</th><th></th></tr></thead><tbody>'+tr+'</tbody></table></div></div>';
+  '<div class="box"><div class="row" style="margin-bottom:10px;justify-content:space-between"><h2 style="margin:0">รายการล่าสุด</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn s" onclick="go(\'form\',null,\''+ch+'\')">เพิ่มรายการ</button><button class="btn o s" onclick="H={q:\'\',from:\'\',to:\'\',type:\'\',cat:\'\',ch:\''+ch+'\'};go(\'hist\')">ดูทั้งหมด</button></div></div><div class="tw"><table class="tx"><thead><tr><th>วันที่</th><th>รายการ</th><th>หมวดหมู่</th><th>ประเภท</th><th class="r">จำนวนเงิน</th><th>บัญชี</th><th>หมายเหตุ</th><th></th></tr></thead><tbody>'+tr+'</tbody></table></div></div>';
 }
 function accForm(id,ch){
   var a=id?S.acc.find(function(x){return x.id===id}):null;
@@ -467,21 +594,40 @@ function delTx(id){
 function rForm(){
   var t=editId?S.tx.find(function(x){return x.id===editId}):null;
   if(editId&&!t){editId=null}
-  var v=t||{date:today(),time:'',type:'exp',name:'',cat:'',amt:'',note:'',ch:preset,acc:''};
-  $('main').innerHTML='<h1>'+(t?'แก้ไขรายการ':'บันทึกรายรับ-รายจ่าย')+'</h1><p class="sub">กรอกข้อมูลรายการทางการเงิน รายการจะแสดงในระบบของช่องทางที่เลือกเท่านั้น</p>'+(t?'':SCANBOX)+
-  '<div class="box" style="max-width:720px"><div class="two">'+
-  '<div class="f"><label>วันที่ทำรายการ</label><input id="fd" type="date" value="'+v.date+'"></div>'+
-  '<div class="f"><label>เวลาทำรายการ (อ่านจากสลิปอัตโนมัติ)</label><input id="ftime" type="time" value="'+(v.time||'')+'"></div>'+
-  '<div class="f"><label>ประเภทรายการ</label><select id="ft" onchange="fillCat()"><option value="inc"'+(v.type==='inc'?' selected':'')+'>รายรับ</option><option value="exp"'+(v.type==='exp'?' selected':'')+'>รายจ่าย</option></select></div>'+
-  '<div class="f"><label>ช่องทางธุรกิจ</label><select id="fc" onchange="fillAcc()"><option value="chat"'+(v.ch==='chat'?' selected':'')+'>ขายผ่านแชท</option><option value="web"'+(v.ch==='web'?' selected':'')+'>ขายผ่านเว็บไซต์</option></select></div>'+
-  '<div class="f"><label>บัญชีที่เกี่ยวข้อง</label><select id="fa"></select></div>'+
-  '<div class="f"><label>ชื่อรายการ / รายละเอียด</label><input id="fn" value="'+esc(v.name)+'" placeholder="เช่น ขาย Netflix 1 เดือน"></div>'+
-  '<div class="f"><label>หมวดหมู่</label><select id="fg"></select></div>'+
-  '<div class="f"><label>จำนวนเงิน (บาท)</label><input id="fm" type="number" min="0" step="0.01" value="'+v.amt+'" placeholder="0.00"></div>'+
-  '<div class="f"><label>รูปแนบ (ไม่บังคับ)</label><input id="fi" type="file" accept="image/*" onchange="pickImg(this)"><div class="prev" id="prev"></div></div></div>'+
+  var v=t||{date:today(),time:'',type:'exp',name:'',cat:'',amt:'',note:'',ch:preset,acc:lastAcc};
+  var okb=savedMsg;savedMsg='';
+  $('main').innerHTML='<h1>'+(t?'แก้ไขรายการ':'บันทึกรายรับ-รายจ่าย')+'</h1><p class="sub">กรอกข้อมูลรายการทางการเงิน รายการจะแสดงในระบบของช่องทางที่เลือกเท่านั้น</p>'+okb+(t?'':SCANBOX)+
+  '<div class="box frm" style="max-width:720px"><div class="two">'+
+  '<div class="f c-d"><label>วันที่ทำรายการ</label><input id="fd" type="date" value="'+v.date+'"></div>'+
+  '<div class="f c-tm"><label>เวลา (อ่านจากสลิป)</label><input id="ftime" type="time" value="'+(v.time||'')+'"></div>'+
+  '<div class="f c-ft"><label>ประเภทรายการ</label><div class="seg" id="seg"><button type="button" data-v="exp" onclick="setType(\'exp\',1)">รายจ่าย</button><button type="button" data-v="inc" onclick="setType(\'inc\',1)">รายรับ</button></div><select id="ft" style="display:none" onchange="setType(this.value,1)"><option value="inc"'+(v.type==='inc'?' selected':'')+'>รายรับ</option><option value="exp"'+(v.type==='exp'?' selected':'')+'>รายจ่าย</option></select><div class="rhint" id="rhint"></div></div>'+
+  '<div class="f c-ch"><label>ช่องทางธุรกิจ</label><select id="fc" onchange="fillAcc()"><option value="chat"'+(v.ch==='chat'?' selected':'')+'>ขายผ่านแชท</option><option value="web"'+(v.ch==='web'?' selected':'')+'>ขายผ่านเว็บไซต์</option></select></div>'+
+  '<div class="f c-ac"><label>บัญชีที่เกี่ยวข้อง</label><select id="fa"></select></div>'+
+  '<div class="f c-nm"><label>ชื่อรายการ / รายละเอียด</label><input id="fn" value="'+esc(v.name)+'" placeholder="เช่น ขาย Netflix 1 เดือน"></div>'+
+  '<div class="f c-cg"><label>หมวดหมู่</label><select id="fg"></select></div>'+
+  '<div class="f c-am"><label>จำนวนเงิน (บาท)</label><input id="fm" type="number" inputmode="decimal" min="0" step="0.01" value="'+v.amt+'" placeholder="0.00"></div>'+
+  '<div class="f c-im"><label>รูปแนบ (ไม่บังคับ)</label><input id="fi" type="file" accept="image/*" onchange="pickImg(this)"><div class="prev" id="prev"></div></div></div>'+
   '<div class="f" style="margin-top:12px"><label>หมายเหตุเพิ่มเติม</label><textarea id="fo">'+esc(v.note)+'</textarea></div>'+
-  '<div class="acts" style="justify-content:flex-start;margin-top:18px"><button class="btn" onclick="saveTx()">'+(t?'บันทึกการแก้ไข':'บันทึกรายการ')+'</button>'+(t?'<button class="btn o" onclick="go(\'hist\')">ยกเลิก</button>':'<button class="btn o" onclick="go(\'form\')">ล้างฟอร์ม</button>')+'</div></div>';
-  fillCat(v.cat);fillAcc(v.acc);showPrev();
+  '<div class="acts stk" style="justify-content:flex-start;margin-top:18px"><button class="btn" onclick="saveTx()">'+(t?'บันทึกการแก้ไข':'บันทึกรายการ')+'</button>'+(t?'<button class="btn o" onclick="goBack()">ยกเลิก</button>':'<button class="btn o" onclick="go(\'form\')">ล้างฟอร์ม</button>')+'</div></div>';
+  fillCat(v.cat);fillAcc(v.acc);showPrev();drawSeg();
+}
+function drawSeg(){
+  var t=$('ft'),sg=$('seg');if(!t||!sg)return;
+  Array.prototype.forEach.call(sg.children,function(b){var on=b.getAttribute('data-v')===t.value;b.className=on?('on '+t.value):''});
+  updRecvHint();
+}
+function setType(v,user){
+  var t=$('ft');if(!t)return;
+  var ch=t.value!==v;t.value=v;if(user)typeTouched=true;
+  if(ch)fillCat();
+  drawSeg();
+}
+function recvKnown(){return !!slipRecv&&rnames().some(function(x){return sameName(x,slipRecv)})}
+function updRecvHint(){
+  var h=$('rhint'),t=$('ft');if(!h||!t)return;
+  if(slipRecv&&t.value==='inc'&&!recvKnown())h.textContent='เมื่อกดบันทึก ระบบจะจำ “'+slipRecv+'” เป็นผู้รับที่เป็นรายรับ สลิปครั้งต่อไปจะตั้งเป็นรายรับให้เอง';
+  else if(slipRecv&&t.value==='inc')h.textContent='ผู้รับ “'+slipRecv+'” เป็นชื่อที่จำไว้ว่าเป็นรายรับ';
+  else h.textContent='';
 }
 function fillCat(sel){
   var L=($('ft').value==='inc'?INCC:EXPC).slice();if(sel&&L.indexOf(sel)<0)L.push(sel);
@@ -529,12 +675,14 @@ function saveTx(){
   p.then(function(){
     if(wasEdit){var t=S.tx.find(function(x){return x.id===wasEdit});Object.assign(t,o);if(touched)t.hasImg=!!img}
     else{o.hasImg=!!img;S.tx.unshift(o)}
-    cache();toast(wasEdit?'แก้ไขรายการแล้ว':'บันทึกรายการแล้ว');editId=null;formImg='';imgTouched=false;preset=o.ch;go('hist');
+    cache();toast(wasEdit?'แก้ไขรายการแล้ว':'บันทึกรายการแล้ว');if(!wasEdit&&slipRecv&&o.type==='inc')addRecvName(slipRecv);editId=null;formImg='';imgTouched=false;preset=o.ch;lastAcc=o.acc;slipRecv='';
+    if(wasEdit){goBack()}
+    else{savedMsg='<div class="okb"><span><b>✓ บันทึกแล้ว</b> '+esc(o.name)+' · <b class="'+(o.type==='inc'?'inc':'exp')+'">'+(o.type==='inc'?'+':'−')+money(o.amt)+'</b> บาท</span><a onclick="go(\'hist\')">ดูในประวัติ</a></div>';go('form')}
   }).catch(fail);
 }
 
 /* ---------- สแกนสลิป (OCR ในเบราว์เซอร์) ---------- */
-var SCANBOX='<div class="box" style="max-width:720px"><h2>สแกนสลิป</h2><div class="f" style="max-width:360px;margin-bottom:12px"><label>เลือกรูปสลิปจากเครื่อง</label><input id="fs" type="file" accept="image/*" onchange="scanSlip(this)"></div><div id="scanMsg">ระบบจะอ่านยอดเงิน วันที่ และโน้ตจากสลิป แล้วใส่ลงฟอร์มให้ โน้ตในสลิปจะกลายเป็นชื่อรายการ ถ้าสลิปไม่มีโน้ตให้กรอกเอง และตรวจสอบข้อมูลก่อนบันทึกทุกครั้ง</div></div>';
+var SCANBOX='<div class="box" style="max-width:720px"><h2>สแกนสลิป</h2><div class="f" style="max-width:360px;margin-bottom:12px"><label>เลือกรูปสลิปจากเครื่อง</label><input id="fs" type="file" accept="image/*" onchange="scanSlip(this)"></div><div id="scanMsg">ระบบจะอ่านยอดเงิน วันที่ เวลา ผู้รับ และโน้ตจากสลิป แล้วใส่ลงฟอร์มให้ (ถ้าผู้รับเป็นชื่อที่จำไว้ จะตั้งเป็นรายรับให้) โน้ตในสลิปจะกลายเป็นชื่อรายการ ถ้าสลิปไม่มีโน้ตให้กรอกเอง และตรวจสอบข้อมูลก่อนบันทึกทุกครั้ง</div></div>';
 var tessP=null;
 function loadTess(){
   if(window.Tesseract)return Promise.resolve();
@@ -553,12 +701,12 @@ function parseSlip(t){
   var lines=t.split(/\n+/).map(function(x){return x.replace(/\s+/g,' ').trim()}).filter(Boolean);
   var out={amount:0,alts:[],date:'',time:'',memo:''};
   /* ยอดเงิน */
-  var numRe=/(?<![\d.,])(\d{1,3}(?:,\d{3})+|\d+)\.\d{2}(?![\d.])/g;
+  var numRe=/(^|[^\d.,])(\d{1,3}(?:,\d{3})+|\d+)\.\d{2}(?![\d.])/g;
   var kw=/จำนวน|amount|ยอด|บาท|thb/i,fee=/ค่าธรรมเนียม|fee/i,c=[];
   lines.forEach(function(l,i){
     var prev=i>0?lines[i-1]:'',m;numRe.lastIndex=0;
     while((m=numRe.exec(l))){
-      var v=parseFloat(m[0].replace(/,/g,''));
+      var v=parseFloat(m[0].slice(m[1].length).replace(/,/g,''));
       if(v>0)c.push({v:v,k:kw.test(l)||(kw.test(prev)&&!/\d+\.\d{2}/.test(prev)),f:fee.test(l)||(fee.test(prev)&&!/\d/.test(prev))});
     }
   });
@@ -585,16 +733,28 @@ function parseSlip(t){
     out.date=mk(m[1],parseInt(m[2],10),y2);
   }
   /* เวลา */
-  var mt=/(?<![\d.:])([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?(?!\d)\s*(am|pm)?/i.exec(full)||/(?<![\d.])([01]?\d|2[0-3])\.([0-5]\d)\s*น/.exec(full);
+  var mt=/(^|[^\d.:])([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?(?!\d)\s*(am|pm)?/i.exec(full)||/(^|[^\d.])([01]?\d|2[0-3])\.([0-5]\d)\s*น/.exec(full);
   if(!mt){
     var dre=/\d{1,2}\s*[\/\-.]\s*\d{1,2}\s*[\/\-.]\s*\d{2,4}|\d{1,2}\s*[ก-๙.]{2,8}\s*\d{2,4}|\d{1,2}\s+[A-Za-z]{3,9}\.?\s+\d{2,4}/;
     for(var li=0;li<lines.length&&!mt;li++){
       if(!dre.test(lines[li]))continue;
       var rest=lines[li].replace(dre,' ');
-      mt=/(?<![\d])([01]?\d|2[0-3])\s*[:;.]\s*([0-5]\d)(?!\d)/.exec(rest);
+      mt=/(^|[^\d])([01]?\d|2[0-3])\s*[:;.]\s*([0-5]\d)(?!\d)/.exec(rest);
     }
   }
-  if(mt){var hh=+mt[1];if(mt[3]&&/pm/i.test(mt[3])&&hh<12)hh+=12;if(mt[3]&&/am/i.test(mt[3])&&hh===12)hh=0;out.time=(hh<10?'0':'')+hh+':'+mt[2]}
+  if(mt){var hh=+mt[2];if(mt[4]&&/pm/i.test(mt[4])&&hh<12)hh+=12;if(mt[4]&&/am/i.test(mt[4])&&hh===12)hh=0;out.time=(hh<10?'0':'')+hh+':'+mt[3]}
+  /* ผู้รับ */
+  out.recv='';out.recvC=[];
+  var gl=/ไปยัง|ผู้รับ|^ถึง|^to\b/i,junk=/ธนาคาร|bank|\d{3}|x{3}|เลขที่|บัญชี|พร้อมเพย์|promptpay|ref/i;
+  for(var ri=0;ri<lines.length&&!out.recv;ri++){
+    if(!gl.test(lines[ri]))continue;
+    var rem=lines[ri].replace(/^.*?(ไปยัง|ผู้รับเงิน|ผู้รับ|ถึง|to)\s*[:：]?\s*/i,'');
+    var cand=[];
+    if(rem&&rem!==lines[ri]&&!junk.test(rem))cand.push(rem);
+    for(var rj=ri+1;rj<lines.length&&rj<=ri+2;rj++){if(!junk.test(lines[rj])&&/[A-Za-zก-๙]{3,}/.test(lines[rj]))cand.push(lines[rj])}
+    cand=cand.filter(function(c){return cleanNm(c).length>=2});
+    if(cand.length){out.recvC=cand;out.recv=cleanNm(cand[0])}
+  }
   /* โน้ต / บันทึกช่วยจำ */
   var lab=/(บันทึกช่วยจำ|บันทึก|ข้อความ|memo|note|หมายเหตุ|โน้ต)\s*[:：]?\s*(.*)$/i;
   var stop=/จาก|ไปยัง|ถึง|from|จำนวน|ค่าธรรมเนียม|fee|amount|รหัส|เลขที่|ref|บาท|\d{1,2}:\d{2}/i;
@@ -616,13 +776,20 @@ function applySlip(p){
   if(p.date){$('fd').value=p.date;got.push('วันที่ '+dth(p.date))}
   if($('ftime')){$('ftime').value=p.time||'';if(p.time)got.push('เวลา '+p.time+' น.')}
   if(p.memo){$('fn').value=p.memo;got.push('โน้ต "'+p.memo+'"')}
+  var tmsg='';
+  if(p.recv){
+    var hit=isIncRecv(p);slipRecv=p.recv;
+    if(hit)setType('inc');else if(!typeTouched)setType('exp');
+    tmsg='ผู้รับ: <b style="color:var(--dark)">'+esc(p.recv)+'</b> '+(hit?'→ ตั้งเป็น <b class="inc">รายรับ</b> ให้แล้ว (เป็นชื่อที่จำไว้)':'→ ยังไม่รู้จักชื่อนี้ จึงตั้งเป็นรายจ่ายไว้ก่อน ถ้าเป็นรายรับ ให้กดปุ่ม “รายรับ” แล้วบันทึก ระบบจะจำชื่อนี้ให้เอง')+'<br>';
+  }else{slipRecv='';tmsg='ไม่พบชื่อผู้รับในสลิป กรุณาเลือกประเภทเอง<br>'}
   h+=got.length?'<b style="color:var(--dark)">อ่านได้:</b> '+esc(got.join(' | '))+'<br>':'อ่านข้อมูลจากสลิปไม่ได้<br>';
+  h+=tmsg;
   if(!p.amount)h+='<span class="exp">ไม่พบยอดเงิน กรุณากรอกเอง</span><br>';
   if(!p.time)h+='<span class="exp">ไม่พบเวลาในสลิป รายการนี้จะเรียงไว้ท้ายสุดของวัน หากต้องการให้เรียงถูกต้อง กรอกเวลาเอง</span><br>';
   if(!p.memo)h+='<span class="exp">สลิปนี้ไม่มีโน้ต กรุณากรอกชื่อรายการเอง</span><br>';
   if(p.alts.length)h+='ตัวเลขอื่นที่พบ (กดเพื่อใช้แทนยอดเงิน): '+p.alts.map(function(v){return '<button class="btn o s" type="button" onclick="useAmt('+v+')">'+money(v)+'</button>'}).join('')+'<br>';
-  h+='แนบรูปสลิปไว้แล้ว กรุณาตรวจสอบข้อมูลก่อนบันทึก และเลือกประเภท ช่องทาง บัญชี หมวดหมู่เอง';
-  $('scanMsg').innerHTML=h;
+  h+='แนบรูปสลิปไว้แล้ว กรุณาตรวจสอบข้อมูลก่อนบันทึก และเลือกช่องทาง บัญชี หมวดหมู่เอง';
+  $('scanMsg').innerHTML=h;updRecvHint();
   var fn=$('fn');
   if(!p.memo){fn.classList.add('need');fn.addEventListener('input',function(){fn.classList.remove('need')},{once:true});fn.focus()}
   else if(!p.amount)$('fm').focus();
@@ -677,16 +844,17 @@ function drawHist(){
 function rHist(){
   var cats=allCats();
   $('main').innerHTML='<h1>ประวัติรายการ</h1><p class="sub">ค้นหาและกรองรายการทางการเงินทั้งหมด</p>'+
-  '<div class="box"><div class="row">'+
+  '<div class="box"><div class="row hrow">'+
   '<div class="f" style="flex:1"><label>ค้นหา</label><input value="'+esc(H.q)+'" oninput="setH(\'q\',this.value)" placeholder="ชื่อรายการ หมายเหตุ"></div>'+
+  '<button class="btn o ftog" type="button" onclick="document.getElementById(\'hfx\').classList.toggle(\'open\')">ตัวกรอง'+(H.from||H.to||H.type||H.cat||H.ch?' ●':'')+'</button><div class="fx" id="hfx">'+
   '<div class="f"><label>ตั้งแต่วันที่</label><input type="date" value="'+H.from+'" onchange="setH(\'from\',this.value)"></div>'+
   '<div class="f"><label>ถึงวันที่</label><input type="date" value="'+H.to+'" onchange="setH(\'to\',this.value)"></div>'+
   '<div class="f"><label>ประเภท</label><select onchange="setH(\'type\',this.value)"><option value="">ทั้งหมด</option><option value="inc"'+(H.type==='inc'?' selected':'')+'>รายรับ</option><option value="exp"'+(H.type==='exp'?' selected':'')+'>รายจ่าย</option></select></div>'+
   '<div class="f"><label>หมวดหมู่</label><select onchange="setH(\'cat\',this.value)"><option value="">ทั้งหมด</option>'+cats.map(function(c){return '<option'+(H.cat===c?' selected':'')+'>'+esc(c)+'</option>'}).join('')+'</select></div>'+
   '<div class="f"><label>ช่องทาง</label><select onchange="setH(\'ch\',this.value)"><option value="">ทั้งหมด</option><option value="chat"'+(H.ch==='chat'?' selected':'')+'>ขายผ่านแชท</option><option value="web"'+(H.ch==='web'?' selected':'')+'>ขายผ่านเว็บไซต์</option></select></div>'+
-  '<button class="btn o" onclick="H={q:\'\',from:\'\',to:\'\',type:\'\',cat:\'\',ch:\'\'};rHist()">ล้างตัวกรอง</button></div>'+
+  '<button class="btn o" onclick="H={q:\'\',from:\'\',to:\'\',type:\'\',cat:\'\',ch:\'\'};rHist()">ล้างตัวกรอง</button></div></div>'+
   '<p id="hsum" style="margin:0 0 10px"></p>'+
-  '<div class="tw"><table><thead><tr><th>วันที่</th><th>รายการ</th><th>หมวดหมู่</th><th>ประเภท</th><th class="r">จำนวนเงิน</th><th>ช่องทาง / บัญชี</th><th>หมายเหตุ</th><th></th></tr></thead><tbody id="hbody"></tbody></table></div></div>';
+  '<div class="tw"><table class="tx"><thead><tr><th>วันที่</th><th>รายการ</th><th>หมวดหมู่</th><th>ประเภท</th><th class="r">จำนวนเงิน</th><th>ช่องทาง / บัญชี</th><th>หมายเหตุ</th><th></th></tr></thead><tbody id="hbody"></tbody></table></div></div>';
   drawHist();
 }
 
@@ -754,3 +922,4 @@ init();
 </script>
 </body>
 </html>
+
