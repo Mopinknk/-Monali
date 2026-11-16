@@ -214,7 +214,7 @@ var H={q:'',from:'',to:'',type:'',cat:'',ch:''};
 var E={ch:'all',from:'',to:''};
 
 function toggleSide(){$('side').classList.toggle('open')}
-function go(v,id,ch){view=v;if(v==='form'){editId=id||null;if(ch)preset=ch;formImg='';imgTouched=false;if(id){var t=S.tx.find(function(x){return x.id===id});if(t&&t.hasImg){api('GET','transactions?id=eq.'+id+'&select=image').then(function(r){if(editId===id&&r&&r[0]){formImg=r[0].image||'';if(view==='form'&&$('prev'))showPrev()}}).catch(function(){})}}}
+function go(v,id,ch){view=v;if(v==='form'){editId=id||null;if(ch)preset=ch;formImg='';imgTouched=false;if(id){var t=S.tx.find(function(x){return x.id===id});if(t&&t.hasImg){api('GET','transactions?id=eq.'+id+'&select=image').then(function(r){if(editId===id&&r&&r[0]){return resolveImg(r[0].image||'').then(function(im){if(editId===id){formImg=im;if(view==='form'&&$('prev'))showPrev()}})}}).catch(function(){})}}}
   $('side').classList.remove('open');render();window.scrollTo(0,0)}
 function drawBrand(){
   var sh=S.shop;
@@ -225,7 +225,7 @@ var tmpLogo='';
 function shopForm(){
   tmpLogo=S.shop.logo||'';
   $('side').classList.remove('open');
-  modal('<h3>ตั้งค่าร้าน</h3><div class="f"><label>ชื่อร้าน</label><input id="sn" value="'+esc(S.shop.name)+'" placeholder="เช่น ร้านแอปพรีเมี่ยม"></div><div class="f"><label>โลโก้ร้าน (เลือกจากเครื่อง)</label><input id="sl" type="file" accept="image/*" onchange="pickLogo(this)"><div class="prev" id="lprev"></div></div><div class="acts"><button class="btn o" onclick="closeM()">ยกเลิก</button><button class="btn" onclick="saveShop()">บันทึก</button></div>');
+  modal('<h3>ตั้งค่าร้าน</h3><div class="f"><label>ชื่อร้าน</label><input id="sn" value="'+esc(S.shop.name)+'" placeholder="เช่น ร้านแอปพรีเมี่ยม"></div><div class="f"><label>โลโก้ร้าน (เลือกจากเครื่อง)</label><input id="sl" type="file" accept="image/*" onchange="pickLogo(this)"><div class="prev" id="lprev"></div></div><div class="f"><label>ที่เก็บรูป</label><button class="btn o s" type="button" onclick="migrateImgs()">ย้ายรูปเดิมไปที่เก็บใหม่ (Storage)</button><div id="migmsg" style="font-size:12px;color:var(--mute);margin-top:6px"></div></div><div class="acts"><button class="btn o" onclick="closeM()">ยกเลิก</button><button class="btn" onclick="saveShop()">บันทึก</button></div>');
   showLogo();setTimeout(function(){$('sn').focus()},50);
 }
 function showLogo(){
@@ -321,12 +321,55 @@ function delCat(t,i){
   });
 }
 
+
+/* ---------- ที่เก็บรูป (Supabase Storage, bucket: slips) ---------- */
+function stHdr(t,extra){var h={apikey:SB.key,Authorization:'Bearer '+t};if(extra)for(var k in extra)h[k]=extra[k];return h}
+function stCheck(r){if(r.status===401){logout(true);throw new Error('NOAUTH')}if(!r.ok)return r.text().then(function(t){throw new Error('storage '+r.status+' '+t)});return r}
+function stUpload(path,dataUrl){
+  return Promise.all([token(),fetch(dataUrl).then(function(r){return r.blob()})]).then(function(a){
+    return fetch(SB.url+'/storage/v1/object/slips/'+path,{method:'POST',headers:stHdr(a[0],{'Content-Type':'image/jpeg','x-upsert':'true'}),body:a[1]});
+  }).then(stCheck).then(function(){return path});
+}
+function stDelete(path){return token().then(function(t){return fetch(SB.url+'/storage/v1/object/slips/'+path,{method:'DELETE',headers:stHdr(t)})}).catch(function(){})}
+function blobToDataUrl(b){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result)};r.onerror=rej;r.readAsDataURL(b)})}
+/* ค่าในคอลัมน์ image: data:... = รูปเก่าในฐานข้อมูล, อย่างอื่น = path ใน Storage */
+function resolveImg(v){
+  if(!v)return Promise.resolve('');
+  if(v.indexOf('data:')===0)return Promise.resolve(v);
+  return token().then(function(t){return fetch(SB.url+'/storage/v1/object/authenticated/slips/'+v,{headers:stHdr(t)})}).then(stCheck).then(function(r){return r.blob()}).then(blobToDataUrl);
+}
+var migRun=false;
+function migrateImgs(){
+  if(migRun)return;migRun=true;
+  var done=0,fails=0;
+  function msg(m){var el=$('migmsg');if(el)el.textContent=m}
+  function step(){
+    api('GET','transactions?select=id&image=like.data:*&limit=10').then(function(rows){
+      rows=rows||[];
+      if(!rows.length){migRun=false;msg('ย้ายเสร็จแล้ว '+done+' รูป'+(fails?' (ไม่สำเร็จ '+fails+')':''));return}
+      return Promise.all(rows.map(function(r){
+        return api('GET','transactions?id=eq.'+r.id+'&select=image').then(function(x){
+          var img=x&&x[0]&&x[0].image;if(!img||img.indexOf('data:')!==0)return;
+          var path=r.id+'.jpg';
+          return stUpload(path,img).then(function(){return api('PATCH','transactions?id=eq.'+r.id,{image:path})}).then(function(){done++});
+        }).catch(function(e){fails++;console.error(e)});
+      })).then(function(){
+        msg('กำลังย้ายรูป... สำเร็จ '+done+' รูป'+(fails?' (ไม่สำเร็จ '+fails+')':''));
+        if(fails>0&&done===0){migRun=false;msg('ย้ายไม่สำเร็จ ตรวจสอบว่ารันคำสั่ง SQL สร้างที่เก็บรูปแล้ว');return}
+        if(fails>=10){migRun=false;msg('หยุดย้ายเพราะมีรูปที่ย้ายไม่สำเร็จ '+fails+' รูป (สำเร็จ '+done+')');return}
+        step();
+      });
+    }).catch(function(e){migRun=false;msg('ผิดพลาด: '+String((e&&e.message)||e).slice(0,160))});
+  }
+  msg('เริ่มย้ายรูป...');step();
+}
+
 /* ---------- Modal ---------- */
 function modal(h){$('modalRoot').innerHTML='<div class="ov" onclick="if(event.target===this)closeM()"><div class="md">'+h+'</div></div>'}
 function closeM(){$('modalRoot').innerHTML=''}
 var cfCb=null;
 function confirmBox(msg,cb){cfCb=cb;modal('<h3>ยืนยันการดำเนินการ</h3><p>'+msg+'</p><div class="acts"><button class="btn o" onclick="closeM()">ยกเลิก</button><button class="btn" onclick="var c=cfCb;closeM();c&&c()">ยืนยัน</button></div>')}
-function viewImg(id){api('GET','transactions?id=eq.'+id+'&select=image').then(function(r){var im=r&&r[0]&&r[0].image;if(im)modal('<img src="'+im+'" style="width:100%;border-radius:12px"><div class="acts"><button class="btn o" onclick="closeM()">ปิด</button></div>');else toast('ไม่พบรูปภาพ')}).catch(fail)}
+function viewImg(id){api('GET','transactions?id=eq.'+id+'&select=image').then(function(r){return resolveImg(r&&r[0]&&r[0].image)}).then(function(im){if(im)modal('<img src="'+im+'" style="width:100%;border-radius:12px"><div class="acts"><button class="btn o" onclick="closeM()">ปิด</button></div>');else toast('ไม่พบรูปภาพ')}).catch(fail)}
 
 /* ---------- Dashboard ---------- */
 function setDash(k,val){D[k]=val;
@@ -398,7 +441,7 @@ function delAcc(id){
 function delTx(id){
   var t=S.tx.find(function(x){return x.id===id});
   confirmBox('ต้องการลบรายการ "'+esc(t.name)+'" จำนวน '+money(t.amt)+' บาท ใช่หรือไม่ การลบไม่สามารถย้อนกลับได้',function(){
-    api('DELETE','transactions?id=eq.'+id).then(function(){S.tx=S.tx.filter(function(x){return x.id!==id});cache();toast('ลบรายการแล้ว');render()}).catch(fail);
+    api('DELETE','transactions?id=eq.'+id).then(function(){if(t.hasImg)stDelete(id+'.jpg');S.tx=S.tx.filter(function(x){return x.id!==id});cache();toast('ลบรายการแล้ว');render()}).catch(fail);
   });
 }
 
@@ -457,8 +500,12 @@ function saveTx(){
   if(!(o.amt>0)){toast('กรุณากรอกจำนวนเงินมากกว่า 0');return}
   var row={tx_date:o.date,type:o.type,name:o.name,category:o.cat,amount:o.amt,note:o.note,channel:o.ch,account_id:o.acc};
   var wasEdit=editId,img=formImg,touched=imgTouched,p;
-  if(wasEdit){if(touched)row.image=img;p=api('PATCH','transactions?id=eq.'+wasEdit,row)}
-  else{o.id=uid();row.id=o.id;row.image=img;p=api('POST','transactions',row)}
+  var tid=wasEdit||uid();if(!wasEdit){o.id=tid;row.id=tid}
+  var up=(touched||!wasEdit)&&img?stUpload(tid+'.jpg',img):Promise.resolve('');
+  p=up.then(function(path){
+    if(wasEdit){if(touched){row.image=path;if(!path)stDelete(tid+'.jpg')}return api('PATCH','transactions?id=eq.'+wasEdit,row)}
+    row.image=path;return api('POST','transactions',row);
+  });
   p.then(function(){
     if(wasEdit){var t=S.tx.find(function(x){return x.id===wasEdit});Object.assign(t,o);if(touched)t.hasImg=!!img}
     else{o.hasImg=!!img;S.tx.push(o)}
