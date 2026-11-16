@@ -110,6 +110,8 @@ main{margin-left:0;padding:20px 14px 60px}
 <script>
 /* ---------- ค่าคงที่ ---------- */
 var KEY='ie_tracker_cache_v2';
+/* ใส่ URL ของ Cloudflare Worker ตรงนี้ (เช่น https://slips-api.ชื่อคุณ.workers.dev) ถ้าเว้นว่างจะเก็บรูปที่ Supabase Storage แทน */
+var R2_URL='https://slips-api.mopinknk.workers.dev';
 var CH={chat:'ขายผ่านแชท',web:'ขายผ่านเว็บไซต์'};
 var EXPC=['ค่าสมัครสมาชิกแอปพรีเมี่ยม','ค่าบัญชีและค่าบริการ','ค่าโฆษณาและการตลาด','ค่าธรรมเนียมธุรกรรม','ค่าใช้จ่ายอื่น ๆ'];
 var INCC=['รายได้จากการขายแอปพรีเมี่ยม','รายรับอื่น ๆ'];
@@ -225,7 +227,7 @@ var tmpLogo='';
 function shopForm(){
   tmpLogo=S.shop.logo||'';
   $('side').classList.remove('open');
-  modal('<h3>ตั้งค่าร้าน</h3><div class="f"><label>ชื่อร้าน</label><input id="sn" value="'+esc(S.shop.name)+'" placeholder="เช่น ร้านแอปพรีเมี่ยม"></div><div class="f"><label>โลโก้ร้าน (เลือกจากเครื่อง)</label><input id="sl" type="file" accept="image/*" onchange="pickLogo(this)"><div class="prev" id="lprev"></div></div><div class="f"><label>ที่เก็บรูป</label><button class="btn o s" type="button" onclick="migrateImgs()">ย้ายรูปเดิมไปที่เก็บใหม่ (Storage)</button><div id="migmsg" style="font-size:12px;color:var(--mute);margin-top:6px"></div></div><div class="acts"><button class="btn o" onclick="closeM()">ยกเลิก</button><button class="btn" onclick="saveShop()">บันทึก</button></div>');
+  modal('<h3>ตั้งค่าร้าน</h3><div class="f"><label>ชื่อร้าน</label><input id="sn" value="'+esc(S.shop.name)+'" placeholder="เช่น ร้านแอปพรีเมี่ยม"></div><div class="f"><label>โลโก้ร้าน (เลือกจากเครื่อง)</label><input id="sl" type="file" accept="image/*" onchange="pickLogo(this)"><div class="prev" id="lprev"></div></div><div class="f"><label>ที่เก็บรูป</label><button class="btn o s" type="button" onclick="migrateImgs()">ย้ายรูปเดิมไปที่เก็บใหม่</button><div id="migmsg" style="font-size:12px;color:var(--mute);margin-top:6px"></div></div><div class="acts"><button class="btn o" onclick="closeM()">ยกเลิก</button><button class="btn" onclick="saveShop()">บันทึก</button></div>');
   showLogo();setTimeout(function(){$('sn').focus()},50);
 }
 function showLogo(){
@@ -336,26 +338,39 @@ function blobToDataUrl(b){return new Promise(function(res,rej){var r=new FileRea
 function resolveImg(v){
   if(!v)return Promise.resolve('');
   if(v.indexOf('data:')===0)return Promise.resolve(v);
+  if(v.indexOf('r2:')===0){if(!r2On())return Promise.reject(new Error('ยังไม่ได้ตั้งค่า R2_URL'));return r2Req('GET',v.slice(3)).then(function(r){return r.blob()}).then(blobToDataUrl)}
   return token().then(function(t){return fetch(SB.url+'/storage/v1/object/authenticated/slips/'+v,{headers:stHdr(t)})}).then(stCheck).then(function(r){return r.blob()}).then(blobToDataUrl);
 }
+
+function r2On(){return !!R2_URL}
+function r2Req(method,key,body){
+  return token().then(function(t){return fetch(R2_URL.replace(/\/+$/,'')+'/img/'+key,{method:method,headers:{Authorization:'Bearer '+t,apikey:SB.key},body:body})}).then(stCheck);
+}
+function r2Put(id,dataUrl){return fetch(dataUrl).then(function(r){return r.blob()}).then(function(b){return r2Req('PUT',id+'.jpg',b)}).then(function(){return 'r2:'+id+'.jpg'})}
+/* เก็บรูป: ใช้ R2 ถ้าตั้งค่าแล้ว ไม่งั้นใช้ Supabase Storage; คืนค่าที่จะเก็บในคอลัมน์ image */
+function putImg(id,dataUrl){
+  if(r2On())return r2Put(id,dataUrl).then(function(v){stDelete(id+'.jpg');return v});
+  return stUpload(id+'.jpg',dataUrl);
+}
+function delImg(id){if(r2On())r2Req('DELETE',id+'.jpg').catch(function(){});stDelete(id+'.jpg')}
 var migRun=false;
 function migrateImgs(){
   if(migRun)return;migRun=true;
   var done=0,fails=0;
+  var flt=r2On()?'image=not.is.null&image=neq.&image=not.like.r2:*':'image=like.data:*';
   function msg(m){var el=$('migmsg');if(el)el.textContent=m}
   function step(){
-    api('GET','transactions?select=id&image=like.data:*&limit=10').then(function(rows){
+    api('GET','transactions?select=id&'+flt+'&limit=10').then(function(rows){
       rows=rows||[];
       if(!rows.length){migRun=false;msg('ย้ายเสร็จแล้ว '+done+' รูป'+(fails?' (ไม่สำเร็จ '+fails+')':''));return}
       return Promise.all(rows.map(function(r){
         return api('GET','transactions?id=eq.'+r.id+'&select=image').then(function(x){
-          var img=x&&x[0]&&x[0].image;if(!img||img.indexOf('data:')!==0)return;
-          var path=r.id+'.jpg';
-          return stUpload(path,img).then(function(){return api('PATCH','transactions?id=eq.'+r.id,{image:path})}).then(function(){done++});
+          var old=x&&x[0]&&x[0].image;if(!old)return;
+          return resolveImg(old).then(function(img){return putImg(r.id,img)}).then(function(path){return api('PATCH','transactions?id=eq.'+r.id,{image:path})}).then(function(){done++});
         }).catch(function(e){fails++;console.error(e)});
       })).then(function(){
         msg('กำลังย้ายรูป... สำเร็จ '+done+' รูป'+(fails?' (ไม่สำเร็จ '+fails+')':''));
-        if(fails>0&&done===0){migRun=false;msg('ย้ายไม่สำเร็จ ตรวจสอบว่ารันคำสั่ง SQL สร้างที่เก็บรูปแล้ว');return}
+        if(fails>0&&done===0){migRun=false;msg('ย้ายไม่สำเร็จ ตรวจสอบการตั้งค่า Worker/R2 หรือ bucket แล้วลองใหม่');return}
         if(fails>=10){migRun=false;msg('หยุดย้ายเพราะมีรูปที่ย้ายไม่สำเร็จ '+fails+' รูป (สำเร็จ '+done+')');return}
         step();
       });
@@ -441,7 +456,7 @@ function delAcc(id){
 function delTx(id){
   var t=S.tx.find(function(x){return x.id===id});
   confirmBox('ต้องการลบรายการ "'+esc(t.name)+'" จำนวน '+money(t.amt)+' บาท ใช่หรือไม่ การลบไม่สามารถย้อนกลับได้',function(){
-    api('DELETE','transactions?id=eq.'+id).then(function(){if(t.hasImg)stDelete(id+'.jpg');S.tx=S.tx.filter(function(x){return x.id!==id});cache();toast('ลบรายการแล้ว');render()}).catch(fail);
+    api('DELETE','transactions?id=eq.'+id).then(function(){if(t.hasImg)delImg(id);S.tx=S.tx.filter(function(x){return x.id!==id});cache();toast('ลบรายการแล้ว');render()}).catch(fail);
   });
 }
 
@@ -501,9 +516,9 @@ function saveTx(){
   var row={tx_date:o.date,type:o.type,name:o.name,category:o.cat,amount:o.amt,note:o.note,channel:o.ch,account_id:o.acc};
   var wasEdit=editId,img=formImg,touched=imgTouched,p;
   var tid=wasEdit||uid();if(!wasEdit){o.id=tid;row.id=tid}
-  var up=(touched||!wasEdit)&&img?stUpload(tid+'.jpg',img):Promise.resolve('');
+  var up=(touched||!wasEdit)&&img?putImg(tid,img):Promise.resolve('');
   p=up.then(function(path){
-    if(wasEdit){if(touched){row.image=path;if(!path)stDelete(tid+'.jpg')}return api('PATCH','transactions?id=eq.'+wasEdit,row)}
+    if(wasEdit){if(touched){row.image=path;if(!path)delImg(tid)}return api('PATCH','transactions?id=eq.'+wasEdit,row)}
     row.image=path;return api('POST','transactions',row);
   });
   p.then(function(){
