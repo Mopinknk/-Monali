@@ -90,6 +90,9 @@ main{margin-left:0;padding:20px 14px 60px}
 .lg-logo{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#ffb8cf,#a9d6ff);margin-bottom:14px}
 .lg-card .f{margin-bottom:14px}
 .lerr{color:var(--exp);min-height:20px;font-size:13px;margin:4px 0 10px}
+.need{border-color:var(--rose)!important;box-shadow:0 0 0 4px #ffe3ec!important}
+#scanMsg{font-size:14px;color:var(--mute);line-height:1.8}
+#scanMsg .btn{margin:0 4px 4px 0}
 </style>
 </head>
 <body>
@@ -186,7 +189,7 @@ function pull(){
     cache();
   });
 }
-function init(){loadSes();if(!SES){showLogin();return}startApp()}
+function init(){try{localStorage.removeItem('ie_tracker_v1')}catch(e){}loadSes();if(!SES){showLogin();return}startApp()}
 function startApp(){
   S={shop:{name:'',logo:''},acc:[],tx:[]};
   try{var r=localStorage.getItem(KEY);if(r){S=JSON.parse(r);fixS()}}catch(e){}
@@ -340,7 +343,7 @@ function rForm(){
   var t=editId?S.tx.find(function(x){return x.id===editId}):null;
   if(editId&&!t){editId=null}
   var v=t||{date:today(),type:'exp',name:'',cat:'',amt:'',note:'',ch:preset,acc:''};
-  $('main').innerHTML='<h1>'+(t?'แก้ไขรายการ':'บันทึกรายรับ-รายจ่าย')+'</h1><p class="sub">กรอกข้อมูลรายการทางการเงิน รายการจะแสดงในระบบของช่องทางที่เลือกเท่านั้น</p>'+
+  $('main').innerHTML='<h1>'+(t?'แก้ไขรายการ':'บันทึกรายรับ-รายจ่าย')+'</h1><p class="sub">กรอกข้อมูลรายการทางการเงิน รายการจะแสดงในระบบของช่องทางที่เลือกเท่านั้น</p>'+(t?'':SCANBOX)+
   '<div class="box" style="max-width:720px"><div class="two">'+
   '<div class="f"><label>วันที่ทำรายการ</label><input id="fd" type="date" value="'+v.date+'"></div>'+
   '<div class="f"><label>ประเภทรายการ</label><select id="ft" onchange="fillCat()"><option value="inc"'+(v.type==='inc'?' selected':'')+'>รายรับ</option><option value="exp"'+(v.type==='exp'?' selected':'')+'>รายจ่าย</option></select></div>'+
@@ -397,6 +400,121 @@ function saveTx(){
     else{o.hasImg=!!img;S.tx.push(o)}
     cache();toast(wasEdit?'แก้ไขรายการแล้ว':'บันทึกรายการแล้ว');editId=null;formImg='';imgTouched=false;preset=o.ch;go('hist');
   }).catch(fail);
+}
+
+/* ---------- สแกนสลิป (OCR ในเบราว์เซอร์) ---------- */
+var SCANBOX='<div class="box" style="max-width:720px"><h2>สแกนสลิป</h2><div class="f" style="max-width:360px;margin-bottom:12px"><label>เลือกรูปสลิปจากเครื่อง</label><input id="fs" type="file" accept="image/*" onchange="scanSlip(this)"></div><div id="scanMsg">ระบบจะอ่านยอดเงิน วันที่ และโน้ตจากสลิป แล้วใส่ลงฟอร์มให้ โน้ตในสลิปจะกลายเป็นชื่อรายการ ถ้าสลิปไม่มีโน้ตให้กรอกเอง และตรวจสอบข้อมูลก่อนบันทึกทุกครั้ง</div></div>';
+var tessP=null;
+function loadTess(){
+  if(window.Tesseract)return Promise.resolve();
+  if(tessP)return tessP;
+  tessP=new Promise(function(res,rej){
+    var sc=document.createElement('script');
+    sc.src='https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js';
+    sc.onload=res;sc.onerror=function(){tessP=null;rej(new Error('LOAD'))};
+    document.head.appendChild(sc);
+  });
+  return tessP;
+}
+function say(t){var m=$('scanMsg');if(m)m.textContent=t}
+function useAmt(v){if($('fm'))$('fm').value=v}
+function parseSlip(t){
+  var lines=t.split(/\n+/).map(function(x){return x.replace(/\s+/g,' ').trim()}).filter(Boolean);
+  var out={amount:0,alts:[],date:'',memo:''};
+  /* ยอดเงิน */
+  var numRe=/(?<![\d.,])(\d{1,3}(?:,\d{3})+|\d+)\.\d{2}(?![\d.])/g;
+  var kw=/จำนวน|amount|ยอด|บาท|thb/i,fee=/ค่าธรรมเนียม|fee/i,c=[];
+  lines.forEach(function(l,i){
+    var prev=i>0?lines[i-1]:'',m;numRe.lastIndex=0;
+    while((m=numRe.exec(l))){
+      var v=parseFloat(m[0].replace(/,/g,''));
+      if(v>0)c.push({v:v,k:kw.test(l)||(kw.test(prev)&&!/\d+\.\d{2}/.test(prev)),f:fee.test(l)||(fee.test(prev)&&!/\d/.test(prev))});
+    }
+  });
+  var pool=c.filter(function(x){return!x.f});
+  var pick=pool.filter(function(x){return x.k})[0];
+  if(!pick&&pool.length)pick=pool.reduce(function(a,b){return b.v>a.v?b:a});
+  if(pick)out.amount=pick.v;
+  pool.forEach(function(x){if(x.v!==out.amount&&out.alts.indexOf(x.v)<0)out.alts.push(x.v)});
+  out.alts=out.alts.slice(0,4);
+  /* วันที่ */
+  var thm={'มค':1,'กพ':2,'มีค':3,'เมย':4,'พค':5,'มิย':6,'กค':7,'สค':8,'กย':9,'ตค':10,'พย':11,'ธค':12};
+  var enm=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  var limit=iso(-1),full=lines.join('\n'),m;
+  function mk(d,mo,y){d=+d;if(!mo||d<1||d>31||y<2000)return '';var r=y+'-'+(mo<10?'0':'')+mo+'-'+(d<10?'0':'')+d;return r<=limit?r:''}
+  var re1=/(\d{1,2})\s*([ก-๙.]{2,8}|[A-Za-z]{3,9}\.?)\s*(\d{2,4})/g;
+  while(!out.date&&(m=re1.exec(full))){
+    var tk=m[2].replace(/\./g,''),th=/[ก-๙]/.test(tk),mo=th?thm[tk]:enm.indexOf(tk.slice(0,3).toLowerCase())+1,n=parseInt(m[3],10);
+    var y=n>=2400?n-543:(n<100?(th?2500+n-543:2000+n):n);
+    out.date=mk(m[1],mo,y);
+  }
+  var re2=/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/g;
+  while(!out.date&&(m=re2.exec(full))){
+    var n2=parseInt(m[3],10),y2=n2>=2400?n2-543:(n2<100?(n2>=57?2500+n2-543:2000+n2):n2);
+    out.date=mk(m[1],parseInt(m[2],10),y2);
+  }
+  /* โน้ต / บันทึกช่วยจำ */
+  var lab=/(บันทึกช่วยจำ|บันทึก|ข้อความ|memo|note|หมายเหตุ|โน้ต)\s*[:：]?\s*(.*)$/i;
+  var stop=/จาก|ไปยัง|ถึง|from|จำนวน|ค่าธรรมเนียม|fee|amount|รหัส|เลขที่|ref|บาท|\d{1,2}:\d{2}/i;
+  for(var i=0;i<lines.length;i++){
+    var mm=lab.exec(lines[i]);
+    if(mm){
+      var v2=(mm[2]||'').trim();
+      if(!v2&&i+1<lines.length&&!stop.test(lines[i+1]))v2=lines[i+1];
+      v2=v2.replace(/^[:：\-\s]+/,'').slice(0,80);
+      if(v2){out.memo=v2;break}
+    }
+  }
+  return out;
+}
+function applySlip(p){
+  if(!$('fm'))return;
+  var got=[],h='';
+  if(p.amount){$('fm').value=p.amount;got.push('ยอดเงิน '+money(p.amount)+' บาท')}
+  if(p.date){$('fd').value=p.date;got.push('วันที่ '+dth(p.date))}
+  if(p.memo){$('fn').value=p.memo;got.push('โน้ต "'+p.memo+'"')}
+  h+=got.length?'<b style="color:var(--dark)">อ่านได้:</b> '+esc(got.join(' | '))+'<br>':'อ่านข้อมูลจากสลิปไม่ได้<br>';
+  if(!p.amount)h+='<span class="exp">ไม่พบยอดเงิน กรุณากรอกเอง</span><br>';
+  if(!p.memo)h+='<span class="exp">สลิปนี้ไม่มีโน้ต กรุณากรอกชื่อรายการเอง</span><br>';
+  if(p.alts.length)h+='ตัวเลขอื่นที่พบ (กดเพื่อใช้แทนยอดเงิน): '+p.alts.map(function(v){return '<button class="btn o s" type="button" onclick="useAmt('+v+')">'+money(v)+'</button>'}).join('')+'<br>';
+  h+='แนบรูปสลิปไว้แล้ว กรุณาตรวจสอบข้อมูลก่อนบันทึก และเลือกประเภท ช่องทาง บัญชี หมวดหมู่เอง';
+  $('scanMsg').innerHTML=h;
+  var fn=$('fn');
+  if(!p.memo){fn.classList.add('need');fn.addEventListener('input',function(){fn.classList.remove('need')},{once:true});fn.focus()}
+  else if(!p.amount)$('fm').focus();
+}
+function scanSlip(inp){
+  var f=inp.files[0];if(!f)return;
+  if(f.type.indexOf('image/')!==0){say('กรุณาเลือกไฟล์รูปภาพ');inp.value='';return}
+  say('กำลังเตรียมรูป...');inp.disabled=true;
+  var r=new FileReader();
+  r.onerror=function(){say('อ่านไฟล์ไม่ได้');inp.disabled=false};
+  r.onload=function(e){
+    var im=new Image();
+    im.onerror=function(){say('เปิดรูปภาพไม่ได้');inp.disabled=false};
+    im.onload=function(){
+      var k=Math.min(1,800/Math.max(im.width,im.height));
+      var c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+      var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
+      formImg=c.toDataURL('image/jpeg',0.7);imgTouched=true;if($('prev'))showPrev();
+      var mx=Math.max(im.width,im.height),k2=mx<1400?1400/mx:Math.min(1,2000/mx);
+      var o=document.createElement('canvas');o.width=Math.round(im.width*k2);o.height=Math.round(im.height*k2);
+      var y=o.getContext('2d');y.fillStyle='#fff';y.fillRect(0,0,o.width,o.height);y.filter='grayscale(1) contrast(1.35)';y.drawImage(im,0,0,o.width,o.height);
+      var worker;
+      say('กำลังโหลดตัวอ่านสลิป (ครั้งแรกอาจใช้เวลาสักครู่ ต้องเชื่อมต่ออินเทอร์เน็ต)...');
+      loadTess().then(function(){
+        return Tesseract.createWorker('tha+eng',1,{logger:function(m){if(m.status==='recognizing text')say('กำลังอ่านสลิป '+Math.round(m.progress*100)+'%')}});
+      }).then(function(w){worker=w;return w.recognize(o)})
+      .then(function(res){return worker.terminate().then(function(){return res})})
+      .then(function(res){applySlip(parseSlip(res.data.text||''))})
+      .catch(function(err){
+        console.error(err);
+        say((err&&err.message==='LOAD'?'โหลดตัวอ่านสลิปไม่สำเร็จ ต้องเชื่อมต่ออินเทอร์เน็ต':'อ่านสลิปไม่สำเร็จ')+' กรุณากรอกข้อมูลเอง (แนบรูปสลิปไว้แล้ว)');
+      }).then(function(){inp.disabled=false;inp.value=''});
+    };
+    im.src=e.target.result;
+  };
+  r.readAsDataURL(f);
 }
 
 /* ---------- ประวัติรายการ ---------- */
