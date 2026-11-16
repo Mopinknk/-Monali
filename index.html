@@ -113,7 +113,7 @@ var KEY='ie_tracker_cache_v2';
 var CH={chat:'ขายผ่านแชท',web:'ขายผ่านเว็บไซต์'};
 var EXPC=['ค่าสมัครสมาชิกแอปพรีเมี่ยม','ค่าบัญชีและค่าบริการ','ค่าโฆษณาและการตลาด','ค่าธรรมเนียมธุรกรรม','ค่าใช้จ่ายอื่น ๆ'];
 var INCC=['รายได้จากการขายแอปพรีเมี่ยม','รายรับอื่น ๆ'];
-var MENU=[['dash','Dashboard ภาพรวม'],['chat','ระบบขายผ่านแชท'],['web','ระบบขายผ่านเว็บไซต์'],['form','บันทึกรายรับ-รายจ่าย'],['hist','ประวัติรายการ'],['exp','ส่งออกเอกสาร']];
+var MENU=[['dash','Dashboard ภาพรวม'],['chat','ระบบขายผ่านแชท'],['web','ระบบขายผ่านเว็บไซต์'],['form','บันทึกรายรับ-รายจ่าย'],['hist','ประวัติรายการ'],['cats','จัดการหมวดหมู่'],['exp','ส่งออกเอกสาร']];
 
 /* ---------- ตัวช่วย ---------- */
 function uid(){if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)})}
@@ -128,7 +128,10 @@ function toast(m){var t=$('toast');t.textContent=m;t.style.display='block';clear
 /* ---------- ข้อมูล ---------- */
 var S;
 var SB={url:'https://vwgysbjieksxkramurfp.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3Z3lzYmppZWtzeGtyYW11cmZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4MDIwNzMsImV4cCI6MjExMDM3ODA3M30.c5WRrjgYDYXW7TvsAG-_gW-DKXuMOBf6zSbWs69HxgI',owner:'fadf6bf6-37d3-45f8-b5ba-7ed0733d1de9'};
-function fixS(){if(!S.shop)S.shop={name:'',logo:''}}
+var DEF_INC=INCC.slice(),DEF_EXP=EXPC.slice();
+function applyCats(){var c=S&&S.cats;INCC=(c&&c.inc&&c.inc.length)?c.inc.slice():DEF_INC.slice();EXPC=(c&&c.exp&&c.exp.length)?c.exp.slice():DEF_EXP.slice()}
+function allCats(){var a=INCC.concat(EXPC);S.tx.forEach(function(t){if(t.cat&&a.indexOf(t.cat)<0)a.push(t.cat)});return a}
+function fixS(){if(!S.shop)S.shop={name:'',logo:''};applyCats()}
 function cache(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function fail(e){if(e&&e.message==='NOAUTH')return;console.error(e);toast('ดำเนินการไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตและการตั้งค่า Supabase')}
 var SES=null,SESKEY='ie_session_v1';
@@ -182,11 +185,13 @@ function pull(){
   return Promise.all([
     api('GET','shop_settings?select=name,logo'),
     getAll('accounts?select=*&order=created_at.asc,id.asc'),
-    getAll('transactions?select=id,tx_date,type,name,category,amount,note,channel,account_id,has_image&order=tx_date.desc,created_at.desc,id.asc')
+    getAll('transactions?select=id,tx_date,type,name,category,amount,note,channel,account_id,has_image&order=tx_date.desc,created_at.desc,id.asc'),
+    api('GET','shop_settings?select=categories').catch(function(){return null})
   ]).then(function(r){
     var sh=(r[0]&&r[0][0])||{};
-    S={shop:{name:sh.name||'',logo:sh.logo||''},acc:r[1].map(fromAcc),tx:r[2].map(fromTx)};
-    cache();
+    var cc=r[3]&&r[3][0]&&r[3][0].categories;
+    S={shop:{name:sh.name||'',logo:sh.logo||''},acc:r[1].map(fromAcc),tx:r[2].map(fromTx),cats:cc||(S&&S.cats)||null};
+    applyCats();cache();
   });
 }
 function init(){try{localStorage.removeItem('ie_tracker_v1')}catch(e){}loadSes();if(!SES){showLogin();return}startApp()}
@@ -253,8 +258,67 @@ function render(){
   drawBrand();
   $('nav').innerHTML=MENU.map(function(m){return '<button class="'+(view===m[0]?'on':'')+'" onclick="go(\''+m[0]+'\')">'+m[1]+'</button>'}).join('');
   $('topTitle').textContent=(MENU.find(function(m){return m[0]===view})||[])[1];
-  var f={dash:rDash,chat:function(){rChan('chat')},web:function(){rChan('web')},form:rForm,hist:rHist,exp:rExp}[view];
+  var f={dash:rDash,chat:function(){rChan('chat')},web:function(){rChan('web')},form:rForm,hist:rHist,cats:rCats,exp:rExp}[view];
   f();
+}
+
+
+/* ---------- จัดการหมวดหมู่ ---------- */
+function saveCats(){
+  S.cats={inc:INCC.slice(),exp:EXPC.slice()};
+  return api('POST','shop_settings?on_conflict=owner_id',{owner_id:SB.owner,name:S.shop.name,logo:S.shop.logo,categories:S.cats},{Prefer:'resolution=merge-duplicates,return=minimal'}).then(function(){cache()});
+}
+function catErr(e){
+  if(e&&e.message==='NOAUTH')return;
+  console.error(e);
+  modal('<h3>บันทึกหมวดหมู่ไม่สำเร็จ</h3><p>ต้องเพิ่มคอลัมน์ในฐานข้อมูลก่อน (ทำครั้งเดียว) ไปที่ Supabase &gt; SQL Editor แล้วรันคำสั่งนี้:</p><p><code>alter table shop_settings add column if not exists categories jsonb;</code></p><p>จากนั้นรีเฟรชหน้าแล้วลองใหม่</p><div class="acts"><button class="btn" onclick="closeM()">ปิด</button></div>');
+}
+function catList(t){return t==='inc'?INCC:EXPC}
+function rCats(){
+  function box(t,title){
+    var L=catList(t);
+    var rows=L.map(function(c,i){
+      var n=S.tx.filter(function(x){return x.type===t&&x.cat===c}).length;
+      return '<tr><td>'+esc(c)+'</td><td class="r">'+n+' รายการ</td><td style="white-space:nowrap;text-align:right"><button class="btn o s" onclick="renCat(\''+t+'\','+i+')">แก้ไข</button> <button class="btn d s" onclick="delCat(\''+t+'\','+i+')">ลบ</button></td></tr>';
+    }).join('');
+    return '<div class="box" style="max-width:720px"><h2>'+title+'</h2><div class="tw"><table><thead><tr><th>ชื่อหมวดหมู่</th><th class="r">ใช้งาน</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<div class="row" style="margin-top:12px;gap:8px"><input id="nc_'+t+'" placeholder="ชื่อหมวดหมู่ใหม่" style="flex:1" onkeydown="if(event.key===\'Enter\')addCat(\''+t+'\')"><button class="btn s" onclick="addCat(\''+t+'\')">เพิ่มหมวดหมู่</button></div></div>';
+  }
+  $('main').innerHTML='<h1>จัดการหมวดหมู่</h1><p class="sub">เพิ่ม แก้ไขชื่อ หรือลบหมวดหมู่รายรับและรายจ่าย การแก้ชื่อจะอัปเดตรายการเดิมที่ใช้หมวดหมู่นี้ให้อัตโนมัติ</p>'+box('inc','หมวดหมู่รายรับ')+box('exp','หมวดหมู่รายจ่าย');
+}
+function addCat(t){
+  var el=$('nc_'+t),v=el.value.trim();
+  if(!v){toast('กรุณากรอกชื่อหมวดหมู่');return}
+  if(INCC.concat(EXPC).indexOf(v)>=0){toast('มีหมวดหมู่ชื่อนี้อยู่แล้ว');return}
+  catList(t).push(v);
+  saveCats().then(function(){toast('เพิ่มหมวดหมู่แล้ว');rCats()}).catch(function(e){catList(t).pop();S.cats={inc:INCC.slice(),exp:EXPC.slice()};catErr(e);rCats()});
+}
+var renCtx=null;
+function renCat(t,i){
+  renCtx={t:t,i:i};
+  modal('<h3>แก้ไขชื่อหมวดหมู่</h3><div class="f"><label>ชื่อหมวดหมู่</label><input id="rc" value="'+esc(catList(t)[i])+'" onkeydown="if(event.key===\'Enter\')doRenCat()"></div><div class="acts"><button class="btn o" onclick="closeM()">ยกเลิก</button><button class="btn" onclick="doRenCat()">บันทึก</button></div>');
+  setTimeout(function(){$('rc').focus()},50);
+}
+function doRenCat(){
+  var t=renCtx.t,i=renCtx.i,L=catList(t),old=L[i],v=$('rc').value.trim();
+  if(!v){toast('กรุณากรอกชื่อหมวดหมู่');return}
+  if(v===old){closeM();return}
+  if(INCC.concat(EXPC).indexOf(v)>=0){toast('มีหมวดหมู่ชื่อนี้อยู่แล้ว');return}
+  L[i]=v;
+  var used=S.tx.some(function(x){return x.type===t&&x.cat===old});
+  saveCats().then(function(){
+    if(!used)return;
+    return api('PATCH','transactions?type=eq.'+t+'&category=eq.'+encodeURIComponent(old),{category:v}).then(function(){S.tx.forEach(function(x){if(x.type===t&&x.cat===old)x.cat=v})});
+  }).then(function(){cache();closeM();toast('แก้ไขหมวดหมู่แล้ว');rCats()}).catch(function(e){L[i]=old;S.cats={inc:INCC.slice(),exp:EXPC.slice()};closeM();catErr(e)});
+}
+function delCat(t,i){
+  var L=catList(t),c=L[i];
+  if(L.length<2){toast('ต้องมีหมวดหมู่อย่างน้อย 1 รายการ');return}
+  var n=S.tx.filter(function(x){return x.type===t&&x.cat===c}).length;
+  confirmBox('ลบหมวดหมู่ “'+esc(c)+'” ?'+(n?'<br>มี '+n+' รายการที่ใช้หมวดหมู่นี้ รายการเดิมจะยังคงอยู่และยังแสดงชื่อหมวดหมู่เดิม':''),function(){
+    L.splice(i,1);
+    saveCats().then(function(){toast('ลบหมวดหมู่แล้ว');rCats()}).catch(function(e){L.splice(i,0,c);S.cats={inc:INCC.slice(),exp:EXPC.slice()};catErr(e);rCats()});
+  });
 }
 
 /* ---------- Modal ---------- */
@@ -276,7 +340,7 @@ function rDash(){
   var chs=D.scope==='all'?['chat','web']:[D.scope];
   var chRows=chs.map(function(c){var x=sum(L.filter(function(t){return t.ch===c}));
     return '<tr><td>'+CH[c]+'</td><td class="r inc">'+money(x.inc)+'</td><td class="r exp">'+money(x.exp)+'</td><td class="r">'+money(x.net)+'</td><td class="r">'+money(chBal(c))+'</td></tr>'}).join('');
-  var cats=INCC.concat(EXPC);
+  var cats=allCats();
   var catRows=cats.map(function(c){var x=sum(L.filter(function(t){return t.cat===c}));
     if(!x.inc&&!x.exp)return '';
     return '<tr><td>'+esc(c)+'</td><td class="r inc">'+money(x.inc)+'</td><td class="r exp">'+money(x.exp)+'</td></tr>'}).join('')||'<tr><td colspan="3" class="empty">ไม่มีข้อมูลในช่วงเวลานี้</td></tr>';
@@ -358,7 +422,7 @@ function rForm(){
   fillCat(v.cat);fillAcc(v.acc);showPrev();
 }
 function fillCat(sel){
-  var L=$('ft').value==='inc'?INCC:EXPC;
+  var L=($('ft').value==='inc'?INCC:EXPC).slice();if(sel&&L.indexOf(sel)<0)L.push(sel);
   $('fg').innerHTML=L.map(function(c){return '<option'+(c===sel?' selected':'')+'>'+esc(c)+'</option>'}).join('');
 }
 function fillAcc(sel){
@@ -531,7 +595,7 @@ function drawHist(){
   $('hsum').innerHTML='พบ '+L.length+' รายการ | รายรับ <b class="inc">'+money(s.inc)+'</b> | รายจ่าย <b class="exp">'+money(s.exp)+'</b> | สุทธิ <b>'+money(s.net)+'</b>';
 }
 function rHist(){
-  var cats=INCC.concat(EXPC);
+  var cats=allCats();
   $('main').innerHTML='<h1>ประวัติรายการ</h1><p class="sub">ค้นหาและกรองรายการทางการเงินทั้งหมด</p>'+
   '<div class="box"><div class="row">'+
   '<div class="f" style="flex:1"><label>ค้นหา</label><input value="'+esc(H.q)+'" oninput="setH(\'q\',this.value)" placeholder="ชื่อรายการ หมายเหตุ"></div>'+
