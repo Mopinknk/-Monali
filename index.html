@@ -697,6 +697,12 @@ function loadTess(){
 }
 function say(t){var m=$('scanMsg');if(m)m.textContent=t}
 function useAmt(v){if($('fm'))$('fm').value=v}
+function ocrName(l){
+  var t=String(l||'').split(/\s+/).filter(Boolean);
+  while(t.length>1&&!/[ก-๙]{3,}|[A-Za-z]{3,}/.test(t[0]))t.shift();
+  while(t.length>1&&t[t.length-1].replace(/[^ก-๙A-Za-z]/g,'').length<=2)t.pop();
+  return cleanNm(t.join(' '));
+}
 function parseSlip(t){
   var lines=t.split(/\n+/).map(function(x){return x.replace(/\s+/g,' ').trim()}).filter(Boolean);
   var out={amount:0,alts:[],date:'',time:'',memo:''};
@@ -723,7 +729,7 @@ function parseSlip(t){
   function mk(d,mo,y){d=+d;if(!mo||d<1||d>31||y<2000)return '';var r=y+'-'+(mo<10?'0':'')+mo+'-'+(d<10?'0':'')+d;return r<=limit?r:''}
   var re1=/(\d{1,2})\s*([ก-๙.]{2,8}|[A-Za-z]{3,9}\.?)\s*(\d{2,4})/g;
   while(!out.date&&(m=re1.exec(full))){
-    var tk=m[2].replace(/\./g,''),th=/[ก-๙]/.test(tk),mo=th?thm[tk]:enm.indexOf(tk.slice(0,3).toLowerCase())+1,n=parseInt(m[3],10);
+    var tk=m[2].replace(/[.\u0E31\u0E34-\u0E3A\u0E47-\u0E4E]/g,''),th=/[ก-๙]/.test(tk),mo=th?thm[tk]:enm.indexOf(tk.slice(0,3).toLowerCase())+1,n=parseInt(m[3],10);
     var y=n>=2400?n-543:(n<100?(th?2500+n-543:2000+n):n);
     out.date=mk(m[1],mo,y);
   }
@@ -758,8 +764,8 @@ function parseSlip(t){
   /* สลิปแบบไม่มีป้ายกำกับ (เช่น K+): บล็อกบน = ผู้โอน, บล็อกล่างใต้ลูกศร = ผู้รับ */
   if(!out.recv){
     var bankRe=/ธนาคาร|ธ\.|bank|promptpay|พร้อมเพย์|^[^ก-๙A-Za-z]*$/i,
-        accRe=/(?:[x×\d*]{2,}[\-\s]+){1,}[x×\d*]{1,}|[x×*]{3,}/i,
-        titleRe=/^(นางสาว|น\.\s?ส\.?|นส\.?|นาย|นาง|ด\.[ชญ]\.|เด็กชาย|เด็กหญิง|mr\.?|mrs\.?|ms\.?|miss)\s*\S+/i,
+        accRe=/(?:[x×%\d*]{2,}[\-\s]+){1,}[x×%\d*]{1,}|[x×*%]{3,}/i,
+        titleRe=/(?:^|[\s)\]])(นางสาว|น\.\s?ส\.?|นส\.?|นาย|นาง|ด\.[ชญ]\.|เด็กชาย|เด็กหญิง|mr\.?|mrs\.?|ms\.?|miss)\s*\S+/i,
         stopRe=/จำนวน|ค่าธรรมเนียม|เลขที่รายการ|สแกน|โอนเงิน|สำเร็จ|บาท|fee|amount/i;
     var blocks=[];
     for(var bi=0;bi<lines.length;bi++){
@@ -775,7 +781,7 @@ function parseSlip(t){
     }
     var tn=lines.filter(function(l){return titleRe.test(l)&&!stopRe.test(l)});
     var pick2=blocks.length>=2?blocks[blocks.length-1]:(tn.length>=2?tn[tn.length-1]:'');
-    if(pick2&&cleanNm(pick2).length>=2){out.recv=cleanNm(pick2);out.recvC=[pick2]}
+    if(pick2&&ocrName(pick2).length>=2){out.recv=ocrName(pick2);out.recvC=[pick2]}
   }
   /* โน้ต / บันทึกช่วยจำ */
   var lab=/(บันทึกช่วยจำ|บันทึก|ข้อความ|memo|note|หมายเหตุ|โน้ต)\s*[:：]?\s*(.*)$/i;
