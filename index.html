@@ -133,7 +133,7 @@ function applyCats(){var c=S&&S.cats;INCC=(c&&c.inc&&c.inc.length)?c.inc.slice()
 function allCats(){var a=INCC.concat(EXPC);S.tx.forEach(function(t){if(t.cat&&a.indexOf(t.cat)<0)a.push(t.cat)});return a}
 function fixS(){if(!S.shop)S.shop={name:'',logo:''};applyCats()}
 function cache(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-function fail(e){if(e&&e.message==='NOAUTH')return;console.error(e);toast('ดำเนินการไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตและการตั้งค่า Supabase')}
+function fail(e){if(e&&e.message==='NOAUTH')return;console.error(e);var m=String((e&&e.message)||'').slice(0,160);toast('ดำเนินการไม่สำเร็จ'+(m?' : '+m:' ตรวจสอบอินเทอร์เน็ตและการตั้งค่า Supabase'))}
 var SES=null,SESKEY='ie_session_v1';
 function loadSes(){try{SES=JSON.parse(localStorage.getItem(SESKEY)||'null')}catch(e){SES=null}}
 function saveSes(d){SES={access_token:d.access_token,refresh_token:d.refresh_token,exp:Math.floor(Date.now()/1000)+(d.expires_in||3600)};try{localStorage.setItem(SESKEY,JSON.stringify(SES))}catch(e){}}
@@ -271,7 +271,7 @@ function saveCats(){
 function catErr(e){
   if(e&&e.message==='NOAUTH')return;
   console.error(e);
-  modal('<h3>บันทึกหมวดหมู่ไม่สำเร็จ</h3><p>ต้องเพิ่มคอลัมน์ในฐานข้อมูลก่อน (ทำครั้งเดียว) ไปที่ Supabase &gt; SQL Editor แล้วรันคำสั่งนี้:</p><p><code>alter table shop_settings add column if not exists categories jsonb;</code></p><p>จากนั้นรีเฟรชหน้าแล้วลองใหม่</p><div class="acts"><button class="btn" onclick="closeM()">ปิด</button></div>');
+  modal('<h3>บันทึกหมวดหมู่ไม่สำเร็จ</h3><p style="word-break:break-all;font-size:12px">รายละเอียด: '+esc(String((e&&e.message)||'').slice(0,300))+'</p><p>ถ้าข้อความข้างบนพูดถึงคอลัมน์ categories ให้เพิ่มคอลัมน์ในฐานข้อมูลก่อน (ทำครั้งเดียว) ไปที่ Supabase &gt; SQL Editor แล้วรันคำสั่งนี้:</p><p><code>alter table shop_settings add column if not exists categories jsonb;</code></p><p>จากนั้นรีเฟรชหน้าแล้วลองใหม่</p><div class="acts"><button class="btn" onclick="closeM()">ปิด</button></div>');
 }
 function catList(t){return t==='inc'?INCC:EXPC}
 function rCats(){
