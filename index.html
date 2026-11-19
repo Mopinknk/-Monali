@@ -75,6 +75,7 @@ tr:last-child td{border-bottom:0}
 .prev .ths{display:flex;flex-wrap:wrap;gap:12px}.prev .th{width:130px}.prev .th img{width:130px;max-width:130px;max-height:170px;object-fit:cover;margin-bottom:4px}.prev .th .btn{width:100%}.prev .cnt{font-size:12px;color:var(--mute);margin-top:6px}
 .eopt{display:flex;align-items:flex-start;gap:10px;margin:6px 0 14px;font-size:14px;cursor:pointer}.eopt input{width:20px;height:20px;margin-top:2px;flex:none}.eopt small{display:block;color:var(--mute);font-size:12px}
 .vimgs img{width:100%;border-radius:12px;display:block;margin-bottom:10px}
+.pbar{height:10px;border-radius:99px;background:#eef1f7;overflow:hidden;margin:8px 0}.pbar i{display:block;height:100%;background:var(--inc)}.pbar i.w{background:#e8a33d}.pbar i.d{background:var(--exp)}.tnote{font-size:13px;color:var(--mute);margin:10px 0 0;line-height:1.55}.best td{background:#e6f6ec}
 #hsum{color:var(--mute);font-size:13px;background:#f6faff;border-radius:12px;padding:8px 14px;display:inline-block}
 #hsum b{color:var(--dark);font-weight:600}
 @media(max-width:900px){
@@ -196,7 +197,7 @@ var R2_URL='https://slips-api.mopinknk.workers.dev';
 var CH={chat:'ขายผ่านแชท',web:'ขายผ่านเว็บไซต์'};
 var EXPC=['ค่าสมัครสมาชิกแอปพรีเมี่ยม','ค่าบัญชีและค่าบริการ','ค่าโฆษณาและการตลาด','ค่าธรรมเนียมธุรกรรม','ค่าใช้จ่ายอื่น ๆ'];
 var INCC=['รายได้จากการขายแอปพรีเมี่ยม','รายรับอื่น ๆ'];
-var MENU=[['dash','Dashboard ภาพรวม'],['chat','ระบบขายผ่านแชท'],['web','ระบบขายผ่านเว็บไซต์'],['form','บันทึกรายรับ-รายจ่าย'],['hist','ประวัติรายการ'],['cats','จัดการหมวดหมู่'],['exp','ส่งออกเอกสาร']];
+var MENU=[['dash','Dashboard ภาพรวม'],['chat','ระบบขายผ่านแชท'],['web','ระบบขายผ่านเว็บไซต์'],['form','บันทึกรายรับ-รายจ่าย'],['hist','ประวัติรายการ'],['cats','จัดการหมวดหมู่'],['tax','สรุปปีภาษี'],['exp','ส่งออกเอกสาร']];
 
 /* ---------- ตัวช่วย ---------- */
 function uid(){if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)})}
@@ -297,12 +298,12 @@ function inPeriod(t,p,v){return p==='all'||!v||t.date.indexOf(v)===0}
 var view='dash',editId=null,preset='chat',formImgs=[],imgTouched=false;
 var D={scope:'all',p:'month',v:today().slice(0,7)};
 var H={q:'',from:'',to:'',type:'',cat:'',ch:''};
-var E={ch:'all',from:'',to:'',slip:false};var MAXIMG=3;
+var E={ch:'all',from:'',to:'',slip:false,tax:false};var MAXIMG=3;
 
 function toggleSide(){$('side').classList.toggle('open')}
 var slipRecv='',typeTouched=false,backView='',backY=0,lastAcc='',savedMsg='';
 function goBack(){var v=backView||'hist',y=backY;backView='';go(v);setTimeout(function(){window.scrollTo(0,y)},30)}
-function go(v,id,ch){var prev=view;view=v;if(v==='form'){slipRecv='';typeTouched=false;editId=id||null;if(id){backView=(prev&&prev!=='form')?prev:'hist';backY=window.scrollY||0}else{backView='';backY=0}if(ch)preset=ch;formImgs=[];imgTouched=false;if(id){var t=S.tx.find(function(x){return x.id===id});if(t&&t.hasImg){api('GET','transactions?id=eq.'+id+'&select=image').then(function(r){if(editId===id&&r&&r[0]){return resolveImgs(r[0].image||'').then(function(ims){if(editId===id&&!imgTouched){formImgs=ims;if(view==='form'&&$('prev'))showPrev()}})}}).catch(function(){})}}}
+function go(v,id,ch){var prev=view;view=v;if(v==='form'){slipRecv='';typeTouched=false;editId=id||null;if(id){backView=(prev&&prev!=='form')?prev:'hist';backY=window.scrollY||0}else{backView='';backY=0}if(ch)preset=ch;formImgs=[];oldImgVals=[];imgTouched=false;if(id){var t=S.tx.find(function(x){return x.id===id});if(t&&t.hasImg){api('GET','transactions?id=eq.'+id+'&select=image').then(function(r){if(editId===id&&r&&r[0]){oldImgVals=parseImgVals(r[0].image||'');return resolveImgs(r[0].image||'').then(function(ims){if(editId===id&&!imgTouched){formImgs=ims;if(view==='form'&&$('prev'))showPrev()}})}}).catch(function(){})}}}
   $('side').classList.remove('open');render();window.scrollTo(0,0)}
 function drawBrand(){
   var sh=S.shop;
@@ -347,7 +348,7 @@ function render(){
   $('nav').innerHTML=MENU.map(function(m){return '<button class="'+(view===m[0]?'on':'')+'" onclick="go(\''+m[0]+'\')">'+m[1]+'</button>'}).join('');
   ['dash','form','hist'].forEach(function(k){var b=$('bn_'+k);if(b)b.className=view===k?'on':''});
   $('topTitle').textContent=(MENU.find(function(m){return m[0]===view})||[])[1];
-  var f={dash:rDash,chat:function(){rChan('chat')},web:function(){rChan('web')},form:rForm,hist:rHist,cats:rCats,exp:rExp}[view];
+  var f={dash:rDash,chat:function(){rChan('chat')},web:function(){rChan('web')},form:rForm,hist:rHist,cats:rCats,tax:rTax,exp:rExp}[view];
   f();
 }
 
@@ -357,7 +358,7 @@ var RNKEY='ie_recv_names_v1';
 function rnLocal(){try{var a=JSON.parse(localStorage.getItem(RNKEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
 function rnSaveLocal(L){try{localStorage.setItem(RNKEY,JSON.stringify(L))}catch(e){}}
 function rnames(){var a=((S&&S.cats&&S.cats.rn)||[]).slice();rnLocal().forEach(function(n){if(!a.some(function(x){return sameName(x,n)}))a.push(n)});return a}
-function catsObj(rn){return{inc:INCC.slice(),exp:EXPC.slice(),rn:(rn||rnames()).slice()}}
+function catsObj(rn){return{inc:INCC.slice(),exp:EXPC.slice(),rn:(rn||rnames()).slice(),nt:ntList()}}
 function saveCats(){
   S.cats=catsObj();
   return api('POST','shop_settings?on_conflict=owner_id',{owner_id:SB.owner,name:S.shop.name,logo:S.shop.logo,categories:S.cats},{Prefer:'resolution=merge-duplicates,return=minimal'}).then(function(){cache()});
@@ -398,12 +399,12 @@ function doRenCat(){
   if(!v){toast('กรุณากรอกชื่อหมวดหมู่');return}
   if(v===old){closeM();return}
   if(INCC.concat(EXPC).indexOf(v)>=0){toast('มีหมวดหมู่ชื่อนี้อยู่แล้ว');return}
-  L[i]=v;
+  L[i]=v;ntRename(t,old,v);
   var used=S.tx.some(function(x){return x.type===t&&x.cat===old});
   saveCats().then(function(){
     if(!used)return;
     return api('PATCH','transactions?type=eq.'+t+'&category=eq.'+encodeURIComponent(old),{category:v}).then(function(){S.tx.forEach(function(x){if(x.type===t&&x.cat===old)x.cat=v})});
-  }).then(function(){cache();closeM();toast('แก้ไขหมวดหมู่แล้ว');rCats()}).catch(function(e){L[i]=old;S.cats=catsObj();closeM();catErr(e)});
+  }).then(function(){cache();closeM();toast('แก้ไขหมวดหมู่แล้ว');rCats()}).catch(function(e){L[i]=old;ntRename(t,v,old);S.cats=catsObj();closeM();catErr(e)});
 }
 function delCat(t,i){
   var L=catList(t),c=L[i];
@@ -440,11 +441,12 @@ function r2Req(method,key,body){
 }
 function r2Put(id,dataUrl){return fetch(dataUrl).then(function(r){return r.blob()}).then(function(b){return r2Req('PUT',id+'.jpg',b)}).then(function(){return 'r2:'+id+'.jpg'})}
 /* หลายรูปต่อรายการ (สูงสุด 3): รูปที่ 1 ใช้ชื่อ id เดิม, รูปที่ 2-3 ใช้ id_2 / id_3 ; คอลัมน์ image เก็บเป็นค่าเดียว (เหมือนเดิม) หรือ JSON array เมื่อมีมากกว่า 1 รูป */
-function imgName(id,i){return i?id+'_'+(i+1):id}
+function imgName(id,i){return i?uid():id}
+var oldImgVals=[];
+function delStored(v){if(!v||v.indexOf('data:')===0)return;if(v.indexOf('r2:')===0){var k=v.slice(3);if(r2On())r2Req('DELETE',k).catch(function(){});stDelete(k)}else stDelete(v)}
 function parseImgVals(v){if(!v)return[];if(v.charAt(0)==='['){try{var a=JSON.parse(v);return Array.isArray(a)?a.filter(Boolean):[]}catch(e){return[]}}return[v]}
 function resolveImgs(v){return Promise.all(parseImgVals(v).map(resolveImg))}
 function putImgs(id,arr){return Promise.all(arr.map(function(d,i){return putImg(imgName(id,i),d)})).then(function(vals){return vals.length===1?vals[0]:JSON.stringify(vals)})}
-function delImgsFrom(id,from){for(var i=from;i<MAXIMG;i++)delImg(imgName(id,i))}
 /* เก็บรูป: ใช้ R2 ถ้าตั้งค่าแล้ว ไม่งั้นใช้ Supabase Storage; คืนค่าที่จะเก็บในคอลัมน์ image */
 function putImg(id,dataUrl){
   if(r2On())return r2Put(id,dataUrl).then(function(v){stDelete(id+'.jpg');return v});
@@ -595,7 +597,7 @@ function delAcc(id){
 function delTx(id){
   var t=S.tx.find(function(x){return x.id===id});
   confirmBox('ต้องการลบรายการ "'+esc(t.name)+'" จำนวน '+money(t.amt)+' บาท ใช่หรือไม่ การลบไม่สามารถย้อนกลับได้',function(){
-    api('DELETE','transactions?id=eq.'+id).then(function(){if(t.hasImg)delImgsFrom(id,0);S.tx=S.tx.filter(function(x){return x.id!==id});cache();toast('ลบรายการแล้ว');render()}).catch(fail);
+    (t.hasImg?api('GET','transactions?id=eq.'+id+'&select=image').catch(function(){return[]}):Promise.resolve([])).then(function(r){var vals=parseImgVals(r&&r[0]&&r[0].image);return api('DELETE','transactions?id=eq.'+id).then(function(){vals.forEach(delStored)})}).then(function(){S.tx=S.tx.filter(function(x){return x.id!==id});cache();toast('ลบรายการแล้ว');render()}).catch(fail);
   });
 }
 
@@ -695,7 +697,7 @@ function saveTx(){
   var tid=wasEdit||uid();if(!wasEdit){o.id=tid;row.id=tid}
   var up=(touched||!wasEdit)&&imgs.length?putImgs(tid,imgs):Promise.resolve('');
   p=up.then(function(path){
-    if(wasEdit){if(touched){row.image=path;delImgsFrom(tid,imgs.length)}return api('PATCH','transactions?id=eq.'+wasEdit,row)}
+    if(wasEdit){if(touched){row.image=path;var nv=parseImgVals(path);oldImgVals.forEach(function(v){if(nv.indexOf(v)<0)delStored(v)})}return api('PATCH','transactions?id=eq.'+wasEdit,row)}
     row.image=path;return api('POST','transactions',row);
   });
   p.then(function(){
@@ -915,12 +917,118 @@ function rHist(){
 }
 
 /* ---------- ส่งออก ---------- */
+
+/* ---------- สรุปปีภาษี (บุคคลธรรมดา) ---------- */
+/* เกณฑ์อ้างอิงจากข้อมูลทั่วไปของกรมสรรพากร ควรตรวจสอบอีกครั้งก่อนยื่นจริง */
+var TAX={file1:60000,file2:120000,vat:1800000,flat:0.6};
+var TXS={year:'',miss:false},TXCATS=[];
+var MTH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+function ntList(){return((S&&S.cats&&S.cats.nt)||[]).slice()}
+function ntSet(){var o={};ntList().forEach(function(k){o[k]=1});return o}
+function ntRename(t,a,b){var n=ntList(),i=n.indexOf(t+'|'+a);if(i>=0&&S.cats){n[i]=t+'|'+b;S.cats.nt=n}}
+function toggleNT(i,on){
+  var c=TXCATS[i];if(!c)return;
+  var k=c.type+'|'+c.cat,prev=ntList();
+  S.cats=catsObj();
+  var n=prev.slice(),j=n.indexOf(k);
+  if(on&&j<0)n.push(k);if(!on&&j>=0)n.splice(j,1);
+  S.cats.nt=n;
+  saveCats().then(function(){rTax()}).catch(function(e){S.cats.nt=prev;catErr(e);rTax()});
+}
+function taxYears(){var o={};o[today().slice(0,4)]=1;S.tx.forEach(function(t){if(t.date)o[t.date.slice(0,4)]=1});return Object.keys(o).sort().reverse()}
+function taxData(y){
+  var ex=ntSet(),rows=[],skip=[],all={},months=[],i;
+  for(i=0;i<12;i++)months.push({inc:0,exp:0});
+  S.tx.forEach(function(t){
+    if(!t.date||t.date.slice(0,4)!==y)return;
+    var k=t.type+'|'+t.cat,c=all[k]||(all[k]={type:t.type,cat:t.cat,n:0,amt:0});
+    c.n++;c.amt+=+t.amt;
+    if(ex[k]){skip.push(t);return}
+    rows.push(t);months[+t.date.slice(5,7)-1][t.type]+=+t.amt;
+  });
+  return{rows:rows,skip:skip,all:all,months:months,s:sum(rows),ex:ex,
+    miss:rows.filter(function(t){return t.type==='exp'&&!t.hasImg})};
+}
+function taxCompare(s){
+  var real=s.inc-s.exp,flat=s.inc*(1-TAX.flat);
+  return{real:real,flat:flat,best:real<flat?'real':(flat<real?'flat':'')};
+}
+function setTaxYear(v){TXS.year=v;TXS.miss=false;rTax()}
+function taxExport(){E.ch='all';E.from=TXS.year+'-01-01';E.to=TXS.year+'-12-31';E.slip=true;E.tax=true;go('exp')}
+function rTax(){
+  var ys=taxYears();if(!TXS.year||ys.indexOf(TXS.year)<0)TXS.year=ys[0];
+  var y=TXS.year,d=taxData(y),s=d.s,c=taxCompare(s),byr=+y+543;
+  var yopts=ys.map(function(v){return '<option value="'+v+'"'+(v===y?' selected':'')+'>พ.ศ. '+(+v+543)+'</option>'}).join('');
+  var vp=Math.min(100,s.inc/TAX.vat*100),vcls=s.inc>=TAX.vat?'d':(vp>=80?'w':'');
+  var vtxt=s.inc>=TAX.vat?'รายได้ถึงเกณฑ์ 1.8 ล้านบาทแล้ว ควรตรวจสอบเรื่องการจดทะเบียน VAT (ต้องจดภายใน 30 วันนับจากวันที่รายได้เกินเกณฑ์)':
+           vp>=80?'ใกล้ถึงเกณฑ์จดทะเบียน VAT (1.8 ล้านบาทต่อปี) แล้ว ควรเตรียมตัว':'ยังต่ำกว่าเกณฑ์จดทะเบียน VAT (1.8 ล้านบาทต่อปี)';
+  var ftxt=s.inc>TAX.file2?'รายได้เกิน '+money(TAX.file2)+' บาท เข้าเกณฑ์ต้องยื่นภาษีทั้งกรณีโสดและสมรส':
+           s.inc>TAX.file1?'รายได้เกิน '+money(TAX.file1)+' บาท เข้าเกณฑ์ต้องยื่นกรณีโสด (กรณีสมรสเกณฑ์คือ '+money(TAX.file2)+' บาท)':
+           'รายได้ยังไม่เกินเกณฑ์ที่ต้องยื่น ('+money(TAX.file1)+' บาท กรณีโสด / '+money(TAX.file2)+' บาท กรณีสมรส)';
+  /* ตารางเดือน */
+  var mrows=d.months.map(function(m,i){if(!m.inc&&!m.exp)return '';return '<tr><td>'+MTH[i]+' '+String(byr).slice(2)+'</td><td class="r inc">'+money(m.inc)+'</td><td class="r exp">'+money(m.exp)+'</td><td class="r">'+money(m.inc-m.exp)+'</td></tr>'}).join('')||'<tr><td colspan="4" class="empty">ไม่มีรายการในปีนี้</td></tr>';
+  /* ตารางหมวดหมู่ + ตัวติ๊กไม่นับ */
+  TXCATS=[];
+  INCC.forEach(function(n){TXCATS.push({type:'inc',cat:n})});
+  EXPC.forEach(function(n){TXCATS.push({type:'exp',cat:n})});
+  Object.keys(d.all).forEach(function(k){var o=d.all[k];if(!TXCATS.some(function(x){return x.type===o.type&&x.cat===o.cat}))TXCATS.push({type:o.type,cat:o.cat})});
+  var crows=TXCATS.map(function(o,i){
+    var k=o.type+'|'+o.cat,a=d.all[k]||{n:0,amt:0},off=!!d.ex[k];
+    return '<tr'+(off?' style="opacity:.6"':'')+'><td><span class="tag '+(o.type==='inc'?'i':'e')+'">'+(o.type==='inc'?'รายรับ':'รายจ่าย')+'</span></td><td>'+esc(o.cat)+'</td><td class="r">'+a.n+'</td><td class="r">'+money(a.amt)+'</td><td style="text-align:center"><input type="checkbox" style="width:20px;height:20px" '+(off?'checked ':'')+'onchange="toggleNT('+i+',this.checked)"></td></tr>';
+  }).join('');
+  /* หลักฐานที่ยังไม่ครบ */
+  var ms=sum(d.miss).exp,mlist='';
+  if(TXS.miss&&d.miss.length){
+    var ml=d.miss.slice().sort(function(a,b){return b.amt-a.amt}).slice(0,100);
+    mlist='<div class="tw" style="margin-top:12px"><table><thead><tr><th>วันที่</th><th>รายการ</th><th>หมวดหมู่</th><th class="r">จำนวนเงิน</th><th></th></tr></thead><tbody>'+ml.map(function(t){return '<tr><td>'+dth(t.date)+'</td><td>'+esc(t.name)+'</td><td>'+esc(t.cat)+'</td><td class="r">'+money(t.amt)+'</td><td><button class="btn o s" onclick="go(\'form\',\''+t.id+'\')">แนบหลักฐาน</button></td></tr>'}).join('')+'</tbody></table></div>'+(d.miss.length>100?'<p class="tnote">แสดง 100 รายการที่ยอดสูงสุดจากทั้งหมด '+d.miss.length+' รายการ</p>':'');
+  }
+  $('main').innerHTML='<h1>สรุปปีภาษี</h1><p class="sub">สรุปรายได้-ค่าใช้จ่ายรายปีสำหรับเตรียมยื่นภาษีเงินได้บุคคลธรรมดา เป็นตัวเลขเบื้องต้นจากข้อมูลที่บันทึกไว้ ควรตรวจสอบกับนักบัญชีหรือกรมสรรพากรก่อนยื่นจริง</p>'+
+  '<div class="row"><div class="f"><label>ปีภาษี</label><select onchange="setTaxYear(this.value)">'+yopts+'</select></div></div>'+
+  '<div class="grid"><div class="card"><div class="l">รายได้รวม</div><div class="v inc">'+money(s.inc)+'</div></div>'+
+  '<div class="card"><div class="l">ค่าใช้จ่ายรวม (ตามจริง)</div><div class="v exp">'+money(s.exp)+'</div></div>'+
+  '<div class="card"><div class="l">กำไรก่อนหักค่าลดหย่อน</div><div class="v '+(c.real<0?'exp':'')+'">'+money(c.real)+'</div></div>'+
+  '<div class="card"><div class="l">รายการที่ไม่นับในภาษี</div><div class="v">'+d.skip.length+'</div><div class="n">ตั้งค่าได้ในตารางหมวดหมู่ด้านล่าง</div></div></div>'+
+  '<div class="box"><h2>เปรียบเทียบวิธีหักค่าใช้จ่าย</h2><div class="tw"><table><thead><tr><th>วิธี</th><th class="r">ค่าใช้จ่ายที่หักได้</th><th class="r">เงินได้สุทธิก่อนหักค่าลดหย่อน</th><th></th></tr></thead><tbody>'+
+  '<tr'+(c.best==='real'?' class="best"':'')+'><td>หักตามจริง<br><span style="font-size:12px;color:var(--mute)">ต้องมีบัญชีรายรับรายจ่ายและหลักฐานครบ</span></td><td class="r">'+money(s.exp)+'</td><td class="r">'+money(c.real)+'</td><td>'+(c.best==='real'?'<span class="tag i">ต่ำกว่า</span>':'')+'</td></tr>'+
+  '<tr'+(c.best==='flat'?' class="best"':'')+'><td>เหมา 60%</td><td class="r">'+money(s.inc*TAX.flat)+'</td><td class="r">'+money(c.flat)+'</td><td>'+(c.best==='flat'?'<span class="tag i">ต่ำกว่า</span>':'')+'</td></tr></tbody></table></div>'+
+  '<p class="tnote">ยังไม่รวมค่าลดหย่อนต่างๆ ใช้เปรียบเทียบเบื้องต้นเท่านั้น วิธีที่เงินได้สุทธิต่ำกว่ามักทำให้ภาษีน้อยกว่า แต่ควรให้นักบัญชีหรือกรมสรรพากรยืนยันก่อนเลือก</p></div>'+
+  '<div class="box"><h2>เกณฑ์ที่ควรรู้</h2><p style="margin:0 0 6px"><b>การยื่นภาษี:</b> '+ftxt+'</p>'+
+  '<p style="margin:10px 0 0"><b>จดทะเบียน VAT:</b> '+vtxt+'</p><div class="pbar"><i class="'+vcls+'" style="width:'+vp.toFixed(1)+'%"></i></div><div style="font-size:13px;color:var(--mute)">'+money(s.inc)+' / '+money(TAX.vat)+' บาท ('+vp.toFixed(1)+'%)</div>'+
+  '<p class="tnote">ตัวเลขนี้เป็นรายได้จากร้านนี้เท่านั้น ถ้ามีเงินได้อื่นด้วย (เช่น เงินเดือน) ให้ตรวจสอบเกณฑ์กับกรมสรรพากรอีกครั้ง</p></div>'+
+  '<div class="box"><h2>สรุปรายเดือน</h2><div class="tw"><table><thead><tr><th>เดือน</th><th class="r">รายรับ</th><th class="r">รายจ่าย</th><th class="r">สุทธิ</th></tr></thead><tbody>'+mrows+'<tr><td><b>รวมปี '+byr+'</b></td><td class="r inc"><b>'+money(s.inc)+'</b></td><td class="r exp"><b>'+money(s.exp)+'</b></td><td class="r"><b>'+money(c.real)+'</b></td></tr></tbody></table></div></div>'+
+  '<div class="box"><h2>หมวดหมู่และรายการที่ไม่นับในภาษี</h2><p class="sub" style="margin-bottom:12px">ติ๊กหมวดที่ไม่ใช่รายได้หรือค่าใช้จ่ายของกิจการ (เช่น ใช้ส่วนตัว โอนระหว่างบัญชีตัวเอง คืนเงินลูกค้า) ระบบจะตัดออกจากสรุปนี้ และจากการส่งออกเมื่อเลือกตัวเลือกไม่รวม การตั้งค่านี้ใช้กับทุกปี และไม่ลบรายการออกจากประวัติ</p><div class="tw"><table><thead><tr><th>ประเภท</th><th>หมวดหมู่</th><th class="r">รายการปี '+byr+'</th><th class="r">ยอดรวม</th><th style="text-align:center">ไม่นับ</th></tr></thead><tbody>'+crows+'</tbody></table></div></div>'+
+  '<div class="box"><h2>ตรวจหลักฐานค่าใช้จ่าย</h2>'+(d.miss.length?'<p style="margin:0">ค่าใช้จ่าย <b class="exp">'+d.miss.length+'</b> รายการ ยอดรวม <b>'+money(ms)+'</b> บาท ยังไม่มีรูปสลิปหรือใบเสร็จแนบ ถ้าจะใช้วิธีหักตามจริงควรแนบหลักฐานให้ครบก่อนยื่น</p><div class="acts" style="justify-content:flex-start;margin-top:12px"><button class="btn o" onclick="TXS.miss=!TXS.miss;rTax()">'+(TXS.miss?'ซ่อนรายการ':'ดูรายการที่ยังไม่มีหลักฐาน')+'</button></div>'+mlist:'<p style="margin:0">ค่าใช้จ่ายทุกรายการในปีนี้มีรูปแนบแล้ว ✓</p>')+'</div>'+
+  '<div class="box"><h2>ส่งออก</h2><div class="acts" style="justify-content:flex-start"><button class="btn" onclick="taxPDF()">พิมพ์ / บันทึกสรุปปีภาษี PDF</button><button class="btn o" onclick="taxExport()">ส่งออกรายการทั้งปี (พร้อมสลิป)</button></div><p class="tnote">ปุ่มที่สองจะพาไปหน้าส่งออกเอกสาร โดยตั้งช่วงวันที่เป็นทั้งปี เปิดตัวเลือกแนบสลิป และไม่รวมหมวดที่ตั้งเป็นไม่นับในภาษีให้อัตโนมัติ</p></div>';
+}
+function printHTML(h){
+  var f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(f);
+  var d=f.contentWindow.document;d.open();d.write(h);d.close();
+  var t0=Date.now();(function wait(){var ims=f.contentWindow.document.images,ok=true;for(var k=0;k<ims.length;k++)if(!ims[k].complete)ok=false;var el=Date.now()-t0;if((ok&&el>700)||el>12000){f.contentWindow.focus();f.contentWindow.print();setTimeout(function(){f.remove()},60000)}else setTimeout(wait,200)})();
+}
+function taxPDF(){
+  var y=TXS.year,d=taxData(y),s=d.s,c=taxCompare(s),byr=+y+543;
+  var mrows=d.months.map(function(m,i){if(!m.inc&&!m.exp)return '';return '<tr><td>'+MTH[i]+' '+String(byr).slice(2)+'</td><td class="r">'+money(m.inc)+'</td><td class="r">'+money(m.exp)+'</td><td class="r">'+money(m.inc-m.exp)+'</td></tr>'}).join('');
+  var keys=Object.keys(d.all).filter(function(k){return !d.ex[k]}).sort(function(a,b){return d.all[a].type===d.all[b].type?d.all[b].amt-d.all[a].amt:(d.all[a].type==='inc'?-1:1)});
+  var crows=keys.map(function(k){var o=d.all[k];return '<tr><td>'+(o.type==='inc'?'รายรับ':'รายจ่าย')+'</td><td>'+esc(o.cat)+'</td><td class="r">'+o.n+'</td><td class="r">'+money(o.amt)+'</td></tr>'}).join('');
+  var skipNames=Object.keys(d.all).filter(function(k){return d.ex[k]}).map(function(k){return (d.all[k].type==='inc'?'รายรับ: ':'รายจ่าย: ')+esc(d.all[k].cat)+' ('+d.all[k].n+' รายการ, '+money(d.all[k].amt)+' บาท)'});
+  var h='<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>สรุปปีภาษี '+byr+'</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet"><style>body{font-family:Sarabun,Tahoma,sans-serif;color:#111;font-size:12px;margin:24px}h1{font-size:20px;margin:0 0 4px}p{margin:2px 0;color:#444}table{width:100%;border-collapse:collapse;margin:10px 0}th,td{border:1px solid #ccc;padding:5px 7px;text-align:left;vertical-align:top}th{background:#f1f1f1}.r{text-align:right}h2{font-size:14px;margin:18px 0 0}.t td{font-weight:600;background:#fafafa}.best td{background:#e6f6ec}.sm{font-size:11px;color:#666}@page{margin:14mm}</style></head><body>'+
+  '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'+(S.shop.logo?'<img src="'+S.shop.logo+'" style="height:52px">':'')+'<div>'+(S.shop.name?'<b style="font-size:16px">'+esc(S.shop.name)+'</b>':'')+'<h1>สรุปรายได้และค่าใช้จ่ายประจำปี พ.ศ. '+byr+'</h1></div></div><p>ผู้ประกอบการบุคคลธรรมดา | วันที่ออกเอกสาร: '+dth(today())+'</p>'+
+  '<h2>สรุปยอดทั้งปี</h2><table><tbody><tr><td>รายได้รวม</td><td class="r">'+money(s.inc)+'</td></tr><tr><td>ค่าใช้จ่ายรวม (ตามจริง)</td><td class="r">'+money(s.exp)+'</td></tr><tr class="t"><td>กำไร (ขาดทุน) ก่อนหักค่าลดหย่อน</td><td class="r">'+money(c.real)+'</td></tr></tbody></table>'+
+  '<h2>เปรียบเทียบวิธีหักค่าใช้จ่าย</h2><table><thead><tr><th>วิธี</th><th class="r">ค่าใช้จ่ายที่หักได้</th><th class="r">เงินได้สุทธิก่อนหักค่าลดหย่อน</th></tr></thead><tbody><tr'+(c.best==='real'?' class="best"':'')+'><td>หักตามจริง</td><td class="r">'+money(s.exp)+'</td><td class="r">'+money(c.real)+'</td></tr><tr'+(c.best==='flat'?' class="best"':'')+'><td>เหมา 60%</td><td class="r">'+money(s.inc*TAX.flat)+'</td><td class="r">'+money(c.flat)+'</td></tr></tbody></table><p class="sm">ยังไม่รวมค่าลดหย่อน ใช้เปรียบเทียบเบื้องต้นเท่านั้น (แถวสีเขียวคือวิธีที่เงินได้สุทธิต่ำกว่า)</p>'+
+  '<h2>สรุปรายเดือน</h2><table><thead><tr><th>เดือน</th><th class="r">รายรับ</th><th class="r">รายจ่าย</th><th class="r">สุทธิ</th></tr></thead><tbody>'+mrows+'<tr class="t"><td>รวม</td><td class="r">'+money(s.inc)+'</td><td class="r">'+money(s.exp)+'</td><td class="r">'+money(c.real)+'</td></tr></tbody></table>'+
+  '<h2>สรุปตามหมวดหมู่</h2><table><thead><tr><th>ประเภท</th><th>หมวดหมู่</th><th class="r">จำนวนรายการ</th><th class="r">ยอดรวม</th></tr></thead><tbody>'+crows+'</tbody></table>'+
+  '<h2>หลักฐานประกอบ</h2><p>ค่าใช้จ่ายที่มีรูปสลิป/ใบเสร็จแนบ: '+(d.rows.filter(function(t){return t.type==='exp'}).length-d.miss.length)+' รายการ | ยังไม่มีหลักฐานแนบ: '+d.miss.length+' รายการ (ยอดรวม '+money(sum(d.miss).exp)+' บาท)</p>'+
+  (skipNames.length?'<h2>หมวดหมู่ที่ไม่นับในภาษี</h2><p class="sm">'+skipNames.join('<br>')+'</p>':'')+
+  '<p class="sm" style="margin-top:18px">เอกสารนี้เป็นข้อมูลสรุปจากระบบบันทึกรายรับ-รายจ่ายของผู้ประกอบการ เพื่อประกอบการเตรียมยื่นภาษี ไม่ใช่เอกสารทางบัญชีที่รับรองโดยผู้ประกอบวิชาชีพบัญชี</p></body></html>';
+  printHTML(h);
+}
 function setE(k,v){E[k]=v;drawExp()}
 function expRows(){
-  return S.tx.filter(function(t){return(E.ch==='all'||t.ch===E.ch)&&(!E.from||t.date>=E.from)&&(!E.to||t.date<=E.to)}).reverse().sort(function(a,b){return a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||'')});
+  var ex=E.tax?ntSet():null;
+  return S.tx.filter(function(t){return(E.ch==='all'||t.ch===E.ch)&&(!E.from||t.date>=E.from)&&(!E.to||t.date<=E.to)&&(!ex||!ex[t.type+'|'+t.cat])}).reverse().sort(function(a,b){return a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||'')});
 }
 function expInfo(){
-  var chn=E.ch==='all'?'ภาพรวมทั้งสองระบบ':'ระบบ'+CH[E.ch];
+  var chn=(E.ch==='all'?'ภาพรวมทั้งสองระบบ':'ระบบ'+CH[E.ch])+(E.tax?' (ไม่รวมหมวดหมู่ที่ตั้งเป็นไม่นับในภาษี)':'');
   var per=(E.from||E.to)?(E.from?dth(E.from):'เริ่มต้น')+' - '+(E.to?dth(E.to):'ปัจจุบัน'):'ทุกช่วงเวลา';
   return{chn:chn,per:per,now:dth(today())};
 }
@@ -935,6 +1043,7 @@ function rExp(){
   '<div class="f"><label>ตั้งแต่วันที่</label><input type="date" value="'+E.from+'" onchange="setE(\'from\',this.value)"></div>'+
   '<div class="f"><label>ถึงวันที่</label><input type="date" value="'+E.to+'" onchange="setE(\'to\',this.value)"></div></div>'+
   '<label class="eopt"><input type="checkbox" id="eslip" onchange="setE(\'slip\',this.checked)"'+(E.slip?' checked':'')+'><span>แนบรูปสลิปในเอกสาร<small>PDF: แสดงรูปสลิปไว้ท้ายเอกสาร / Excel: ใส่รูปไว้ในแถวของแต่ละรายการ (ถ้ารายการเยอะจะใช้เวลาโหลดรูปนานขึ้น)</small></span></label>'+
+  '<label class="eopt"><input type="checkbox" onchange="setE(\'tax\',this.checked)"'+(E.tax?' checked':'')+'><span>ไม่รวมหมวดหมู่ที่ตั้งเป็น “ไม่นับในภาษี”<small>ตั้งค่าได้ที่เมนู สรุปปีภาษี (เช่น รายจ่ายส่วนตัว หรือโอนระหว่างบัญชีตัวเอง)</small></span></label>'+
   '<p id="epv"></p><p id="emsg" style="font-size:13px;color:var(--mute);margin:0 0 8px"></p><div class="acts" style="justify-content:flex-start"><button class="btn" onclick="expPDF()">ส่งออก PDF</button><button class="btn o" onclick="expXLS()">ส่งออก Excel</button></div>'+
   '<p class="sub" style="margin:14px 0 0;font-size:13px">การส่งออก PDF จะเปิดหน้าต่างพิมพ์ ให้เลือก "บันทึกเป็น PDF" ที่ปลายทาง</p></div>';
   drawExp();
