@@ -121,7 +121,7 @@ input,select,textarea{font-size:16px;padding:12px 14px}
 .bnav button.on{color:#2a78b8;background:var(--soft);font-weight:600}
 table.tx,table.tx tbody{display:block;width:100%}
 table.tx thead{display:none}
-table.tx tr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"name amt" "date type" "cat acc" "note note" "act act";gap:3px 12px;padding:12px 2px;border-bottom:1px solid var(--line)}
+table.tx tr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"name amt" "date type" "cat acc" "bal bal" "note note" "act act";gap:3px 12px;padding:12px 2px;border-bottom:1px solid var(--line)}
 table.tx tr:last-child{border-bottom:0}
 table.tx td{display:block;padding:0;border:0;min-width:0}
 table.tx tbody tr:hover td{background:none}
@@ -132,11 +132,14 @@ table.tx td:nth-child(2){grid-area:name;font-weight:600;color:var(--dark)}
 table.tx td:nth-child(3){grid-area:cat;font-size:13px;color:var(--mute)}
 table.tx td:nth-child(4){grid-area:type;text-align:right}
 table.tx td:nth-child(5){grid-area:amt;text-align:right;font-weight:600;font-size:16px}
-table.tx td:nth-child(6){grid-area:acc;text-align:right;font-size:13px}
-table.tx td:nth-child(7){grid-area:note;font-size:13px;color:var(--mute)}
-table.tx td:nth-child(7):empty{display:none}
-table.tx td:nth-child(8){grid-area:act;margin-top:6px}
-table.tx td.empty{grid-area:1/1/6/3}
+table.tx td:nth-child(6){grid-area:bal;text-align:right;font-size:13px;color:var(--mute)}
+table.tx td:nth-child(6) br{display:none}
+table.tx td:nth-child(6) b{color:var(--dark);margin-right:6px}
+table.tx td:nth-child(7){grid-area:acc;text-align:right;font-size:13px}
+table.tx td:nth-child(8){grid-area:note;font-size:13px;color:var(--mute)}
+table.tx td:nth-child(8):empty{display:none}
+table.tx td:nth-child(9){grid-area:act;margin-top:6px}
+table.tx td.empty{grid-area:1/1/7/3}
 }
 
 /* ---- ปรับปรุง: ฟอร์ม/มือถือ ---- */
@@ -169,13 +172,14 @@ main{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
 .hrow .f[style*="flex:1"]{min-width:100%}
 .tw table:not(.tx) th,.tw table:not(.tx) td{padding:10px 8px;font-size:13px}
 .tw table:not(.tx) th,.tw table:not(.tx) td:first-child{white-space:nowrap}
-table.tx td:nth-child(8) .btn{flex:none}
-table.tx td:nth-child(8){display:flex;gap:8px}
+table.tx td:nth-child(9) .btn{flex:none}
+table.tx td:nth-child(9){display:flex;gap:8px}
 #scanMsg{font-size:13px;line-height:1.7}
 .okb{border-radius:14px}
 }
 .dupl{margin:8px 0 12px;padding-left:20px;font-size:14px}.dtag{display:inline-block;background:#fff3d6;color:#9a6b00;border-radius:99px;padding:0 8px;font-size:12px}
 .wrnb{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#fff6e0;color:#8a6200;border-radius:16px;padding:12px 16px;margin:0 0 16px;font-size:14px}.wrnb a{color:#2a78b8;cursor:pointer;text-decoration:underline;white-space:nowrap}
+.bal .bs{font-size:12px;color:var(--mute);font-weight:400}.bal{white-space:nowrap}
 .bkst{font-size:14px;color:var(--mute);margin:0 0 12px}
 </style>
 </head>
@@ -560,22 +564,35 @@ function rDash(){
 }
 
 /* ---------- หน้าระบบแต่ละช่องทาง ---------- */
+var RB={};
+function totalNet(){return S.acc.reduce(function(x,a){return x+accBal(a).bal},0)}
+function runBal(){
+  RB={};var ab={},all=0;
+  S.acc.forEach(function(a){ab[a.id]=+a.open||0;all+=+a.open||0});
+  S.tx.slice().sort(txCmp).reverse().forEach(function(t){
+    var d=t.type==='inc'?+t.amt:-t.amt;
+    ab[t.acc]=(ab[t.acc]||0)+d;all+=d;RB[t.id]={a:ab[t.acc],all:all};
+  });
+}
 function txRow(t,showCh){
+  var rb=RB[t.id];
   return '<tr><td>'+dth(t.date)+(t.time?'<br><span style="color:var(--mute);font-size:13px">'+t.time+' น.</span>':'')+'</td><td>'+esc(t.name)+'</td><td>'+esc(t.cat)+'</td><td><span class="tag '+(t.type==='inc'?'i':'e')+'">'+(t.type==='inc'?'รายรับ':'รายจ่าย')+'</span></td><td class="r '+(t.type==='inc'?'inc':'exp')+'">'+money(t.amt)+'</td>'+
+  '<td class="r bal">'+(rb?'<b>'+money(rb.a)+'</b>':'-')+'</td>'+
   '<td>'+(showCh?CH[t.ch]+'<br>':'')+'<span style="color:var(--mute);font-size:13px">'+esc(accName(t.acc))+'</span></td>'+
   '<td>'+esc(t.note)+(t.hasImg?'<br><button class="btn o s" style="margin-top:6px" onclick="viewImg(\''+t.id+'\')">ดูรูป</button>':'')+'</td>'+
   '<td style="white-space:nowrap"><button class="btn o s" onclick="go(\'form\',\''+t.id+'\')">แก้ไข</button> <button class="btn d s" onclick="delTx(\''+t.id+'\')">ลบ</button></td></tr>';
 }
 function rChan(ch){
+  runBal();
   var L=S.tx.filter(function(t){return t.ch===ch}).sort(txCmp);
   var s=sum(L);
   var accs=S.acc.filter(function(a){return a.ch===ch});
   var ar=accs.map(function(a){var b=accBal(a);return '<tr><td>'+esc(a.name)+'</td><td class="r">'+money(a.open)+'</td><td class="r inc">'+money(b.inc)+'</td><td class="r exp">'+money(b.exp)+'</td><td class="r"><b>'+money(b.bal)+'</b></td><td style="white-space:nowrap"><button class="btn o s" onclick="accForm(\''+a.id+'\')">แก้ไข</button> <button class="btn d s" onclick="delAcc(\''+a.id+'\')">ลบ</button></td></tr>'}).join('')||'<tr><td colspan="6" class="empty">ยังไม่มีบัญชี กรุณาเพิ่มบัญชีรับเงิน</td></tr>';
-  var tr=L.slice(0,10).map(function(t){return txRow(t,false)}).join('')||'<tr><td colspan="8" class="empty">ยังไม่มีรายการ</td></tr>';
+  var tr=L.slice(0,10).map(function(t){return txRow(t,false)}).join('')||'<tr><td colspan="9" class="empty">ยังไม่มีรายการ</td></tr>';
   $('main').innerHTML='<h1>ระบบ'+CH[ch]+'</h1><p class="sub">ข้อมูลรายรับ รายจ่าย และบัญชีรับเงินของช่องทางนี้โดยเฉพาะ</p>'+
   '<div class="grid"><div class="card"><div class="l">รายรับ</div><div class="v inc">'+money(s.inc)+'</div></div><div class="card"><div class="l">รายจ่าย</div><div class="v exp">'+money(s.exp)+'</div></div><div class="card"><div class="l">ยอดคงเหลือ</div><div class="v">'+money(chBal(ch))+'</div><div class="n">รวมยอดตั้งต้นของบัญชี</div></div></div>'+
   '<div class="box"><div class="row" style="margin-bottom:10px;justify-content:space-between"><h2 style="margin:0">บัญชีรับเงิน</h2><button class="btn s" onclick="accForm(null,\''+ch+'\')">เพิ่มบัญชี</button></div><div class="tw"><table><thead><tr><th>ชื่อบัญชี</th><th class="r">ยอดตั้งต้น</th><th class="r">รับเข้า</th><th class="r">จ่ายออก</th><th class="r">คงเหลือ</th><th></th></tr></thead><tbody>'+ar+'</tbody></table></div></div>'+
-  '<div class="box"><div class="row" style="margin-bottom:10px;justify-content:space-between"><h2 style="margin:0">รายการล่าสุด</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn s" onclick="go(\'form\',null,\''+ch+'\')">เพิ่มรายการ</button><button class="btn o s" onclick="H={q:\'\',from:\'\',to:\'\',type:\'\',cat:\'\',ch:\''+ch+'\'};go(\'hist\')">ดูทั้งหมด</button></div></div><div class="tw"><table class="tx"><thead><tr><th>วันที่</th><th>รายการ</th><th>หมวดหมู่</th><th>ประเภท</th><th class="r">จำนวนเงิน</th><th>บัญชี</th><th>หมายเหตุ</th><th></th></tr></thead><tbody>'+tr+'</tbody></table></div></div>';
+  '<div class="box"><div class="row" style="margin-bottom:10px;justify-content:space-between"><h2 style="margin:0">รายการล่าสุด</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn s" onclick="go(\'form\',null,\''+ch+'\')">เพิ่มรายการ</button><button class="btn o s" onclick="H={q:\'\',from:\'\',to:\'\',type:\'\',cat:\'\',ch:\''+ch+'\'};go(\'hist\')">ดูทั้งหมด</button></div></div><div class="tw"><table class="tx"><thead><tr><th>วันที่</th><th>รายการ</th><th>หมวดหมู่</th><th>ประเภท</th><th class="r">จำนวนเงิน</th><th class="r">ยอดสุทธิหลังรายการ</th><th>บัญชี</th><th>หมายเหตุ</th><th></th></tr></thead><tbody>'+tr+'</tbody></table></div></div>';
 }
 function accForm(id,ch){
   var a=id?S.acc.find(function(x){return x.id===id}):null;
@@ -943,8 +960,9 @@ function histList(){
 }
 function setH(k,v){H[k]=v;drawHist()}
 function drawHist(){
+  runBal();
   var L=histList(),s=sum(L);
-  $('hbody').innerHTML=L.map(function(t){return txRow(t,true)}).join('')||'<tr><td colspan="8" class="empty">ไม่พบรายการ</td></tr>';
+  $('hbody').innerHTML=L.map(function(t){return txRow(t,true)}).join('')||'<tr><td colspan="9" class="empty">ไม่พบรายการ</td></tr>';
   $('hsum').innerHTML='พบ '+L.length+' รายการ | รายรับ <b class="inc">'+money(s.inc)+'</b> | รายจ่าย <b class="exp">'+money(s.exp)+'</b> | สุทธิ <b>'+money(s.net)+'</b>';
 }
 function rHist(){
@@ -960,7 +978,7 @@ function rHist(){
   '<div class="f"><label>ช่องทาง</label><select onchange="setH(\'ch\',this.value)"><option value="">ทั้งหมด</option><option value="chat"'+(H.ch==='chat'?' selected':'')+'>ขายผ่านแชท</option><option value="web"'+(H.ch==='web'?' selected':'')+'>ขายผ่านเว็บไซต์</option></select></div>'+
   '<button class="btn o" onclick="H={q:\'\',from:\'\',to:\'\',type:\'\',cat:\'\',ch:\'\'};rHist()">ล้างตัวกรอง</button></div></div>'+
   '<p id="hsum" style="margin:0 0 10px"></p>'+
-  '<div class="tw"><table class="tx"><thead><tr><th>วันที่</th><th>รายการ</th><th>หมวดหมู่</th><th>ประเภท</th><th class="r">จำนวนเงิน</th><th>ช่องทาง / บัญชี</th><th>หมายเหตุ</th><th></th></tr></thead><tbody id="hbody"></tbody></table></div></div>';
+  '<div class="tw"><table class="tx"><thead><tr><th>วันที่</th><th>รายการ</th><th>หมวดหมู่</th><th>ประเภท</th><th class="r">จำนวนเงิน</th><th class="r">ยอดสุทธิหลังรายการ</th><th>ช่องทาง / บัญชี</th><th>หมายเหตุ</th><th></th></tr></thead><tbody id="hbody"></tbody></table></div></div>';
   drawHist();
 }
 
