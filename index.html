@@ -182,6 +182,7 @@ table.tx td:nth-child(9){display:flex;gap:8px}
 .bal .bs{font-size:12px;color:var(--mute);font-weight:400}.bal{white-space:nowrap}
 .bkst{font-size:14px;color:var(--mute);margin:0 0 12px}
 .seg button.on.dt{background:#fff;color:var(--rose);font-weight:600;box-shadow:0 2px 8px rgba(217,86,122,.18)}
+.sgprev{display:inline-block;border:1px solid var(--line);border-radius:12px;background:#fff;padding:8px 14px;margin-bottom:10px}.sgprev img{display:block;max-height:70px;max-width:240px}
 .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
 .drow{display:flex;gap:8px;align-items:center;margin-bottom:8px}.drow .dd1{flex:1;min-width:0}.drow .dq{width:84px;flex:none}.drow .dp{width:120px;flex:none}.drow .da{width:100px;text-align:right;font-weight:600;flex:none;font-size:14px}
 @media(max-width:700px){.dgrid{grid-template-columns:1fr}.drow{flex-wrap:wrap}.drow .dd1{flex:1 1 100%}.drow .dq{width:80px}.drow .dp{flex:1;width:auto}}
@@ -201,7 +202,7 @@ table.tx td:nth-child(9){display:flex;gap:8px}
 .dc .dtot .dg{background:#e6f3ff;border-radius:10px;font-weight:700;font-size:16px;margin-top:4px;padding:8px 10px}
 .dc .dbt{margin-top:8px;font-size:13px;color:#6b5d63;text-align:right}
 .dc .dnt{margin-top:18px;font-size:12.5px;color:#6b5d63;white-space:pre-line}.dc .dnt b{color:#3b2f35}
-.dc .dsg{display:flex;gap:40px;margin-top:70px}.dc .dsg>div{flex:1;text-align:center;font-size:13px}.dc .dsg i{display:block;border-bottom:1px solid #9a8c92;height:36px;margin-bottom:6px}
+.dc .dsg{display:flex;gap:40px;margin-top:40px}.dc .dsg>div{flex:1;text-align:center;font-size:13px}.dc .dsg i{display:flex;align-items:flex-end;justify-content:center;border-bottom:1px solid #9a8c92;height:60px;margin-bottom:6px}.dc .dsg i img{max-height:56px;max-width:90%;display:block}
 </style>
 </head>
 <body>
@@ -1357,8 +1358,8 @@ function rsRun(){
 var DOCT={QT:{th:'ใบเสนอราคา',en:'QUOTATION',pf:'QT',sg:['ผู้เสนอราคา','ผู้อนุมัติสั่งซื้อ (ลูกค้า)']},RC:{th:'ใบเสร็จรับเงิน',en:'RECEIPT',pf:'RC',sg:['ผู้รับเงิน','ผู้ชำระเงิน']}};
 var DOC=null,DSET=null,h2cP=null,docBusy=false,PAYS=['โอนเงิน','เงินสด','พร้อมเพย์','บัตรเครดิต/เดบิต','อื่น ๆ'];
 function cobj(){return(S&&S.cats)||{}}
-function dset(){if(!DSET){var x=cobj().dset||{};DSET={addr:x.addr||'',phone:x.phone||'',tid:x.tid||'',bank:x.bank||''}}return DSET}
-function docNew(type){return{id:uid(),type:type||'QT',no:'',date:today(),cust:'',contact:'',items:[{d:'',q:1,p:''}],disc:'',note:'',valid:7,pay:'โอนเงิน',ref:''}}
+function dset(){if(!DSET){var x=cobj().dset||{};DSET={addr:x.addr||'',phone:x.phone||'',tid:x.tid||'',bank:x.bank||'',sig:x.sig||'',signer:x.signer||''}}return DSET}
+function docNew(type){return{id:uid(),type:type||'QT',no:'',date:today(),cust:'',contact:'',items:[{d:'',q:1,p:''}],disc:'',note:'',valid:7,pay:'โอนเงิน',ref:'',sg:true}}
 function ymOf(date){var p=String(date||today()).split('-');return(+p[0]+543)+p[1]}
 function padNo(n){return n<1000?('00'+n).slice(-3):String(n)}
 function nextNo(type,date,dc){dc=dc||cobj().dc||{};var k=type+ymOf(date);return DOCT[type].pf+'-'+ymOf(date)+'-'+padNo((dc[k]||0)+1)}
@@ -1391,6 +1392,7 @@ function docHTML(d,pv){
   if(d.type==='QT')meta+='<div class="dmt"><b>ยืนยันราคาถึง</b>'+dth(addDays(d.date,d.valid))+'</div>';
   else{meta+='<div class="dmt"><b>ชำระโดย</b>'+esc(d.pay||'-')+'</div>';if(d.ref)meta+='<div class="dmt"><b>อ้างอิง</b>'+esc(d.ref)+'</div>'}
   var shop='<div class="dsh">'+(S.shop.logo?'<img src="'+esc(S.shop.logo)+'">':'')+'<div><div class="dsn">'+esc(S.shop.name||'ชื่อร้านค้า')+'</div><div class="dsm">'+esc(s.addr||'')+(s.phone?'\nโทร '+esc(s.phone):'')+(s.tid?'\nเลขประจำตัวผู้เสียภาษี '+esc(s.tid):'')+'</div></div></div>';
+  var sgi=(d.sg!==false&&dset().sig)?'<img src="'+esc(dset().sig)+'">':'';
   var foot='';
   if(d.type==='QT'&&s.bank)foot+='<div class="dnt"><b>ช่องทางชำระเงิน</b>\n'+esc(s.bank)+'</div>';
   if(d.note)foot+='<div class="dnt"><b>หมายเหตุ</b>\n'+esc(d.note)+'</div>';
@@ -1399,7 +1401,7 @@ function docHTML(d,pv){
   '<table><thead><tr><th style="width:44px">ลำดับ</th><th>รายการ</th><th style="width:70px">จำนวน</th><th style="width:110px">ราคา/หน่วย</th><th style="width:120px">จำนวนเงิน</th></tr></thead><tbody>'+tr+'</tbody></table>'+
   '<div class="dtot"><div><span>รวมเป็นเงิน</span><span>'+money(c.sub)+'</span></div>'+(c.disc?'<div><span>ส่วนลด</span><span>-'+money(c.disc)+'</span></div>':'')+'<div class="dg"><span>ยอดสุทธิ</span><span>'+money(c.total)+' บาท</span></div></div>'+
   '<div class="dbt">('+bahtText(c.total)+')</div>'+foot+
-  '<div class="dsg"><div><i></i>'+T.sg[0]+'</div><div><i></i>'+T.sg[1]+'</div></div></div>';
+  '<div class="dsg"><div><i>'+sgi+'</i>'+T.sg[0]+(s.signer?'<div class="dsm" style="text-align:center">('+esc(s.signer)+')</div>':'')+'</div><div><i></i>'+T.sg[1]+'</div></div></div>';
 }
 function docFit(){
   var w=$('dpw'),i=$('dpi');if(!w||!i)return;
@@ -1440,10 +1442,11 @@ function rDoc(){
   '<div class="dgrid" style="margin-top:14px"><div class="f"><label>ส่วนลด (บาท)</label><input type="number" inputmode="decimal" min="0" step="0.01" value="'+esc(d.disc)+'" oninput="docSet(\'disc\',this.value)"></div><div class="f"><label>หมายเหตุ (ไม่บังคับ)</label><input value="'+esc(d.note)+'" oninput="docSet(\'note\',this.value)"></div></div>'+
   '<p id="dsum" style="margin:14px 0 0;font-size:15px"></p>'+
   '<details style="margin-top:14px"><summary style="cursor:pointer;color:#2a78b8">ข้อมูลหัวเอกสาร (ที่อยู่ เบอร์โทร เลขผู้เสียภาษี ช่องทางชำระเงิน)</summary><div class="dgrid" style="margin-top:10px"><div class="f"><label>ที่อยู่ร้าน</label><textarea oninput="docHs(\'addr\',this.value)">'+esc(s.addr)+'</textarea></div><div class="f"><label>ช่องทางชำระเงิน (แสดงในใบเสนอราคา)</label><textarea oninput="docHs(\'bank\',this.value)" placeholder="เช่น ธนาคารกสิกรไทย 000-0-00000-0 ชื่อบัญชี ...">'+esc(s.bank)+'</textarea></div><div class="f"><label>เบอร์โทร</label><input value="'+esc(s.phone)+'" oninput="docHs(\'phone\',this.value)"></div><div class="f"><label>เลขประจำตัวผู้เสียภาษี (ไม่บังคับ)</label><input value="'+esc(s.tid)+'" oninput="docHs(\'tid\',this.value)"></div></div><p class="bkst" style="margin-top:8px">ชื่อร้านและโลโก้ใช้จาก “ตั้งค่าร้าน” · ข้อมูลหัวเอกสารจะถูกจดจำเมื่อกดออกเอกสาร</p></details>'+
+  '<div style="margin-top:16px"><div class="f"><label>ลายเซ็นอิเล็กทรอนิกส์ (ผู้เสนอราคา / ผู้รับเงิน)</label></div><div id="dsigbox"></div></div>'+
   '<div class="acts stk" style="justify-content:flex-start;margin-top:18px"><button class="btn" id="dbtn1" onclick="docIssue(true)">'+(d.no?'บันทึกการแก้ไข + ดาวน์โหลดรูป':'ออกเอกสาร + ดาวน์โหลดรูป')+'</button><button class="btn o" id="dbtn2" onclick="docIssue(false)">'+(d.no?'บันทึกการแก้ไข':'บันทึกเอกสาร')+'</button><button class="btn o" onclick="docReset()">เอกสารใหม่</button></div></div>'+
   '<div class="box" style="max-width:980px"><h2>ตัวอย่างเอกสาร</h2><div class="dpw" id="dpw"><div class="dpi" id="dpi"></div></div></div>'+
   '<div class="box" style="max-width:980px"><h2>เอกสารที่ออกแล้ว</h2><p class="bkst">เลขที่ของเอกสารที่ลบแล้วจะไม่ถูกนำกลับมาใช้ซ้ำ</p><div class="tw"><table><thead><tr><th>เลขที่</th><th>ชนิด</th><th>วันที่</th><th>ลูกค้า</th><th class="r">ยอดสุทธิ</th><th></th></tr></thead><tbody>'+recs+'</tbody></table></div></div>';
-  docItemsUI();updDocPrev();setTimeout(docFit,60);
+  docItemsUI();docSigUI();updDocPrev();setTimeout(docFit,60);
 }
 function docMaxDc(a,b){var o={};[a,b].forEach(function(x){for(var k in (x||{}))o[k]=Math.max(o[k]||0,+x[k]||0)});return o}
 function docUnion(a,b){var m={},o=[];(b||[]).concat(a||[]).forEach(function(r){if(r&&r.id)m[r.id]=r});for(var k in m)o.push(m[k]);return o}
@@ -1469,7 +1472,7 @@ function docIssue(dl){
     var n=d.no;
     if(!n){var k=d.type+ymOf(d.date);n=nextNo(d.type,d.date,dc);dc[k]=(dc[k]||0)+1}
     var c=docCalc({items:its,disc:d.disc});
-    rec={id:d.id,type:d.type,no:n,date:d.date,cust:String(d.cust).trim(),contact:d.contact||'',items:its.map(function(it){return{d:String(it.d).trim(),q:+it.q,p:+it.p}}),disc:c.disc,note:d.note||'',valid:+d.valid||0,pay:d.pay||'',ref:d.ref||'',total:c.total,hs:Object.assign({},dset()),at:new Date().toISOString()};
+    rec={id:d.id,type:d.type,no:n,date:d.date,cust:String(d.cust).trim(),contact:d.contact||'',items:its.map(function(it){return{d:String(it.d).trim(),q:+it.q,p:+it.p}}),disc:c.disc,note:d.note||'',valid:+d.valid||0,pay:d.pay||'',ref:d.ref||'',total:c.total,sg:d.sg!==false,hs:(function(){var h=Object.assign({},dset());delete h.sig;return h})(),at:new Date().toISOString()};
     return{dc:dc,docs:docUnion(docs.filter(function(x){return x.id!==rec.id}),[rec])};
   }).then(function(){
     DOC=JSON.parse(JSON.stringify(rec));delete DOC.hs;delete DOC.total;delete DOC.at;
@@ -1511,6 +1514,69 @@ function docImg(id){
     setTimeout(function(){a.remove();URL.revokeObjectURL(u)},5000);
     toast('ดาวน์โหลดรูปภาพ '+r.no+'.png แล้ว',3500);
   }).catch(function(e){if(host)host.remove();fail(e)});
+}
+
+/* ---------- ลายเซ็นอิเล็กทรอนิกส์ ---------- */
+var sgHas=false;
+function docSigUI(){
+  var el=$('dsigbox');if(!el)return;var s=dset();
+  el.innerHTML=(s.sig?'<div class="sgprev"><img src="'+esc(s.sig)+'"></div>':'<p class="bkst" style="margin:0 0 8px">ยังไม่มีลายเซ็น กดเซ็นด้วยนิ้ว/เมาส์ หรืออัปโหลดรูปลายเซ็น (ระบบจะตัดพื้นหลังขาวให้)</p>')+
+  '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><button class="btn o s" type="button" onclick="docSignPad()">เซ็นลายเซ็น</button><button class="btn o s" type="button" onclick="$(\'sgf\').click()">อัปโหลดรูปลายเซ็น</button><input id="sgf" type="file" accept="image/*" style="display:none" onchange="docSignFile(this)">'+(s.sig?'<button class="btn d s" type="button" onclick="docSignDel()">ลบลายเซ็น</button>':'')+'</div>'+
+  '<div class="dgrid"><div class="f"><label>ชื่อผู้ลงนาม (แสดงใต้ลายเซ็น)</label><input value="'+esc(s.signer)+'" oninput="docHs(\'signer\',this.value)" onchange="docPersistSet()"></div><label class="eopt" style="align-self:end"><input type="checkbox" '+(DOC.sg!==false?'checked':'')+' onchange="docSet(\'sg\',this.checked)"><span>แสดงลายเซ็นในเอกสารนี้</span></label></div>';
+}
+function docPersistSet(){return docMutate(function(dc,docs){return{dc:dc,docs:docs}}).catch(fail)}
+function setSig(u){
+  if(!u){toast('ไม่พบลายเซ็นในภาพ กรุณาลองใหม่');return}
+  dset().sig=u;closeM();docSigUI();updDocPrev();docPersistSet();toast('บันทึกลายเซ็นแล้ว');
+}
+function docSignDel(){confirmBox('ต้องการลบลายเซ็นที่บันทึกไว้ใช่หรือไม่',function(){dset().sig='';docSigUI();updDocPrev();docPersistSet();toast('ลบลายเซ็นแล้ว')})}
+function sgFinish(src){
+  var w=src.width,h=src.height,d=src.getContext('2d').getImageData(0,0,w,h).data,x0=w,y0=h,x1=-1,y1=-1,x,y;
+  for(y=0;y<h;y++)for(x=0;x<w;x++){if(d[(y*w+x)*4+3]>20){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
+  if(x1<0)return '';
+  var pad=8;x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(w-1,x1+pad);y1=Math.min(h-1,y1+pad);
+  var cw=x1-x0+1,ch=y1-y0+1,sc=Math.min(1,400/cw,160/ch),o=document.createElement('canvas');
+  o.width=Math.max(1,Math.round(cw*sc));o.height=Math.max(1,Math.round(ch*sc));
+  o.getContext('2d').drawImage(src,x0,y0,cw,ch,0,0,o.width,o.height);
+  return o.toDataURL('image/png');
+}
+function sgClear(){var c=$('sgc');if(c){c.getContext('2d').clearRect(0,0,c.width,c.height);sgHas=false}}
+function sgUse(){if(!sgHas){toast('กรุณาเซ็นในกรอบก่อน');return}setSig(sgFinish($('sgc')))}
+function docSignPad(){
+  sgHas=false;
+  modal('<h3>เซ็นลายเซ็น</h3><p class="bkst">ใช้นิ้วหรือเมาส์เซ็นในกรอบด้านล่าง</p><canvas id="sgc" width="800" height="320" style="width:100%;display:block;border:1px dashed #9a8c92;border-radius:12px;background:#fff;touch-action:none"></canvas><div class="acts"><button class="btn o" onclick="sgClear()">ล้าง</button><button class="btn o" onclick="closeM()">ยกเลิก</button><button class="btn" onclick="sgUse()">ใช้ลายเซ็นนี้</button></div>');
+  var c=$('sgc'),x=c.getContext('2d'),dn=false;
+  c.style.height=Math.round(c.clientWidth*0.4)+'px';
+  x.lineWidth=6;x.lineCap='round';x.lineJoin='round';x.strokeStyle='#1d2a55';
+  function pt(e){var t=(e.touches&&e.touches[0])?e.touches[0]:e,r=c.getBoundingClientRect();return[(t.clientX-r.left)*c.width/r.width,(t.clientY-r.top)*c.height/r.height]}
+  function st(e){e.preventDefault();dn=true;var p=pt(e);x.beginPath();x.moveTo(p[0],p[1]);x.lineTo(p[0]+.1,p[1]+.1);x.stroke();sgHas=true}
+  function mv(e){if(!dn)return;e.preventDefault();var p=pt(e);x.lineTo(p[0],p[1]);x.stroke();x.beginPath();x.moveTo(p[0],p[1])}
+  function en(){dn=false}
+  if(window.PointerEvent){
+    c.addEventListener('pointerdown',function(e){try{c.setPointerCapture(e.pointerId)}catch(_){}st(e)});
+    c.addEventListener('pointermove',mv);c.addEventListener('pointerup',en);c.addEventListener('pointercancel',en);
+  }else{
+    c.addEventListener('touchstart',st);c.addEventListener('touchmove',mv);c.addEventListener('touchend',en);
+    c.addEventListener('mousedown',st);c.addEventListener('mousemove',mv);c.addEventListener('mouseup',en);
+  }
+}
+function docSignFile(inp){
+  var f=inp.files&&inp.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(){
+    var im=new Image();
+    im.onload=function(){
+      var sc=Math.min(1,1200/Math.max(im.width,im.height)),c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(im.width*sc));c.height=Math.max(1,Math.round(im.height*sc));
+      var x=c.getContext('2d');x.drawImage(im,0,0,c.width,c.height);
+      var id=x.getImageData(0,0,c.width,c.height),p=id.data;
+      for(var i=0;i<p.length;i+=4){if(p[i]>225&&p[i+1]>225&&p[i+2]>225)p[i+3]=0}
+      x.putImageData(id,0,0);inp.value='';setSig(sgFinish(c));
+    };
+    im.onerror=function(){toast('อ่านรูปไม่ได้')};
+    im.src=r.result;
+  };
+  r.readAsDataURL(f);
 }
 
 /* ---------- เริ่มต้น ---------- */
