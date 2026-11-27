@@ -174,6 +174,9 @@ table.tx td:nth-child(8){display:flex;gap:8px}
 #scanMsg{font-size:13px;line-height:1.7}
 .okb{border-radius:14px}
 }
+.dupl{margin:8px 0 12px;padding-left:20px;font-size:14px}.dtag{display:inline-block;background:#fff3d6;color:#9a6b00;border-radius:99px;padding:0 8px;font-size:12px}
+.wrnb{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#fff6e0;color:#8a6200;border-radius:16px;padding:12px 16px;margin:0 0 16px;font-size:14px}.wrnb a{color:#2a78b8;cursor:pointer;text-decoration:underline;white-space:nowrap}
+.bkst{font-size:14px;color:var(--mute);margin:0 0 12px}
 </style>
 </head>
 <body>
@@ -197,7 +200,7 @@ var R2_URL='https://slips-api.mopinknk.workers.dev';
 var CH={chat:'ขายผ่านแชท',web:'ขายผ่านเว็บไซต์'};
 var EXPC=['ค่าสมัครสมาชิกแอปพรีเมี่ยม','ค่าบัญชีและค่าบริการ','ค่าโฆษณาและการตลาด','ค่าธรรมเนียมธุรกรรม','ค่าใช้จ่ายอื่น ๆ'];
 var INCC=['รายได้จากการขายแอปพรีเมี่ยม','รายรับอื่น ๆ'];
-var MENU=[['dash','Dashboard ภาพรวม'],['chat','ระบบขายผ่านแชท'],['web','ระบบขายผ่านเว็บไซต์'],['form','บันทึกรายรับ-รายจ่าย'],['hist','ประวัติรายการ'],['cats','จัดการหมวดหมู่'],['tax','สรุปปีภาษี'],['exp','ส่งออกเอกสาร']];
+var MENU=[['dash','Dashboard ภาพรวม'],['chat','ระบบขายผ่านแชท'],['web','ระบบขายผ่านเว็บไซต์'],['form','บันทึกรายรับ-รายจ่าย'],['hist','ประวัติรายการ'],['cats','จัดการหมวดหมู่'],['tax','สรุปปีภาษี'],['exp','ส่งออกเอกสาร'],['bak','สำรองข้อมูล']];
 
 /* ---------- ตัวช่วย ---------- */
 function uid(){if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)})}
@@ -207,7 +210,7 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 function money(n){return Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function dth(s){if(!s)return '-';var p=s.split('-');return p[2]+'/'+p[1]+'/'+(+p[0]+543)}
 function $(id){return document.getElementById(id)}
-function toast(m){var t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(function(){t.style.display='none'},2600)}
+function toast(m,ms){var t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(function(){t.style.display='none'},ms||2600)}
 
 /* ---------- ข้อมูล ---------- */
 var S;
@@ -286,7 +289,7 @@ function startApp(){
   S={shop:{name:'',logo:''},acc:[],tx:[]};
   try{var r=localStorage.getItem(KEY);if(r){S=JSON.parse(r);fixS()}}catch(e){}
   view='dash';render();
-  pull().then(function(){if(view!=='form'&&!$('modalRoot').innerHTML)render();else drawBrand()}).catch(function(e){if(e&&e.message==='NOAUTH')return;console.error(e);toast('เชื่อมต่อ Supabase ไม่สำเร็จ กำลังแสดงข้อมูลที่เก็บไว้ในเครื่อง')});
+  pull().then(function(){autoSnap('อัตโนมัติ','auto');if(view!=='form'&&!$('modalRoot').innerHTML)render();else drawBrand()}).catch(function(e){if(e&&e.message==='NOAUTH')return;console.error(e);toast('เชื่อมต่อ Supabase ไม่สำเร็จ กำลังแสดงข้อมูลที่เก็บไว้ในเครื่อง')});
 }
 function sum(list){var i=0,e=0;list.forEach(function(t){if(t.type==='inc')i+=+t.amt;else e+=+t.amt});return{inc:i,exp:e,net:i-e}}
 function accBal(a){var s=sum(S.tx.filter(function(t){return t.acc===a.id}));return{inc:s.inc,exp:s.exp,bal:(+a.open||0)+s.net}}
@@ -348,8 +351,9 @@ function render(){
   $('nav').innerHTML=MENU.map(function(m){return '<button class="'+(view===m[0]?'on':'')+'" onclick="go(\''+m[0]+'\')">'+m[1]+'</button>'}).join('');
   ['dash','form','hist'].forEach(function(k){var b=$('bn_'+k);if(b)b.className=view===k?'on':''});
   $('topTitle').textContent=(MENU.find(function(m){return m[0]===view})||[])[1];
-  var f={dash:rDash,chat:function(){rChan('chat')},web:function(){rChan('web')},form:rForm,hist:rHist,cats:rCats,tax:rTax,exp:rExp}[view];
+  var f={dash:rDash,chat:function(){rChan('chat')},web:function(){rChan('web')},form:rForm,hist:rHist,cats:rCats,tax:rTax,exp:rExp,bak:rBak}[view];
   f();
+  if(view==='dash'){var bn=bkNotice();if(bn)$('main').insertAdjacentHTML('afterbegin',bn)}
 }
 
 
@@ -591,13 +595,15 @@ function saveAcc(id,ch){
 function delAcc(id){
   if(S.tx.some(function(t){return t.acc===id})){toast('ไม่สามารถลบได้ เพราะบัญชีนี้มีรายการอยู่');return}
   confirmBox('ต้องการลบบัญชีนี้ใช่หรือไม่',function(){
+    autoSnap('ก่อนลบบัญชี','event');
     api('DELETE','accounts?id=eq.'+id).then(function(){S.acc=S.acc.filter(function(a){return a.id!==id});cache();toast('ลบบัญชีแล้ว');render()}).catch(fail);
   });
 }
 function delTx(id){
   var t=S.tx.find(function(x){return x.id===id});
   confirmBox('ต้องการลบรายการ "'+esc(t.name)+'" จำนวน '+money(t.amt)+' บาท ใช่หรือไม่ การลบไม่สามารถย้อนกลับได้',function(){
-    (t.hasImg?api('GET','transactions?id=eq.'+id+'&select=image').catch(function(){return[]}):Promise.resolve([])).then(function(r){var vals=parseImgVals(r&&r[0]&&r[0].image);return api('DELETE','transactions?id=eq.'+id).then(function(){vals.forEach(delStored)})}).then(function(){S.tx=S.tx.filter(function(x){return x.id!==id});cache();toast('ลบรายการแล้ว');render()}).catch(fail);
+    autoSnap('ก่อนลบรายการ','event');
+    (t.hasImg?api('GET','transactions?id=eq.'+id+'&select=image').catch(function(){return[]}):Promise.resolve([])).then(function(r){var vals=parseImgVals(r&&r[0]&&r[0].image);return api('DELETE','transactions?id=eq.'+id).then(function(){vals.forEach(delStored)})}).then(function(){S.tx=S.tx.filter(function(x){return x.id!==id});cache();toast('ลบรายการแล้ว'+nbTail(t.acc),4500);render()}).catch(fail);
   });
 }
 
@@ -613,13 +619,13 @@ function rForm(){
   '<div class="f c-tm"><label>เวลา (อ่านจากสลิป)</label><input id="ftime" type="time" value="'+(v.time||'')+'"></div>'+
   '<div class="f c-ft"><label>ประเภทรายการ</label><div class="seg" id="seg"><button type="button" data-v="exp" onclick="setType(\'exp\',1)">รายจ่าย</button><button type="button" data-v="inc" onclick="setType(\'inc\',1)">รายรับ</button></div><select id="ft" style="display:none" onchange="setType(this.value,1)"><option value="inc"'+(v.type==='inc'?' selected':'')+'>รายรับ</option><option value="exp"'+(v.type==='exp'?' selected':'')+'>รายจ่าย</option></select><div class="rhint" id="rhint"></div></div>'+
   '<div class="f c-ch"><label>ช่องทางธุรกิจ</label><select id="fc" onchange="fillAcc()"><option value="chat"'+(v.ch==='chat'?' selected':'')+'>ขายผ่านแชท</option><option value="web"'+(v.ch==='web'?' selected':'')+'>ขายผ่านเว็บไซต์</option></select></div>'+
-  '<div class="f c-ac"><label>บัญชีที่เกี่ยวข้อง</label><select id="fa"></select></div>'+
+  '<div class="f c-ac"><label>บัญชีที่เกี่ยวข้อง</label><select id="fa" onchange="updAbal()"></select><div class="rhint" id="abal"></div></div>'+
   '<div class="f c-nm"><label>ชื่อรายการ / รายละเอียด</label><input id="fn" value="'+esc(v.name)+'" placeholder="เช่น ขาย Netflix 1 เดือน"></div>'+
   '<div class="f c-cg"><label>หมวดหมู่</label><select id="fg"></select></div>'+
   '<div class="f c-am"><label>จำนวนเงิน (บาท)</label><input id="fm" type="number" inputmode="decimal" min="0" step="0.01" value="'+v.amt+'" placeholder="0.00"></div>'+
   '<div class="f c-im"><label>รูปแนบ (ไม่บังคับ แนบได้สูงสุด 3 รูป)</label><input id="fi" type="file" accept="image/*" multiple onchange="pickImg(this)"><div class="prev" id="prev"></div></div></div>'+
   '<div class="f" style="margin-top:12px"><label>หมายเหตุเพิ่มเติม</label><textarea id="fo">'+esc(v.note)+'</textarea></div>'+
-  '<div class="acts stk" style="justify-content:flex-start;margin-top:18px"><button class="btn" onclick="saveTx()">'+(t?'บันทึกการแก้ไข':'บันทึกรายการ')+'</button>'+(t?'<button class="btn o" onclick="goBack()">ยกเลิก</button>':'<button class="btn o" onclick="go(\'form\')">ล้างฟอร์ม</button>')+'</div></div>';
+  '<div class="acts stk" style="justify-content:flex-start;margin-top:18px"><button class="btn" id="sbtn" onclick="saveTx()">'+(t?'บันทึกการแก้ไข':'บันทึกรายการ')+'</button>'+(t?'<button class="btn o" onclick="goBack()">ยกเลิก</button>':'<button class="btn o" onclick="go(\'form\')">ล้างฟอร์ม</button>')+'</div></div>';
   fillCat(v.cat);fillAcc(v.acc);showPrev();drawSeg();
 }
 function drawSeg(){
@@ -647,7 +653,9 @@ function fillCat(sel){
 function fillAcc(sel){
   var L=S.acc.filter(function(a){return a.ch===$('fc').value});
   $('fa').innerHTML=L.length?L.map(function(a){return '<option value="'+a.id+'"'+(a.id===sel?' selected':'')+'>'+esc(a.name)+'</option>'}).join(''):'<option value="">ยังไม่มีบัญชี (เพิ่มได้ในหน้าระบบของช่องทางนั้น)</option>';
+  updAbal();
 }
+function updAbal(){var el=$('abal');if(!el)return;var a=S.acc.find(function(x){return x.id===$('fa').value});el.textContent=a?'ยอดสุทธิปัจจุบันของบัญชีนี้ '+money(accBal(a).bal)+' บาท':''}
 function showPrev(){
   var el=$('prev');if(!el)return;
   if(!formImgs.length){el.innerHTML='';return}
@@ -685,16 +693,52 @@ function pickImg(inp){
     if(over)toast('แนบได้สูงสุด '+MAXIMG+' รูป ระบบเพิ่มให้เท่าที่ได้');else if(bad)toast('ข้ามไฟล์ที่ไม่ใช่รูปภาพ');
   }).catch(function(){toast('เปิดรูปภาพไม่ได้')}).then(function(){inp.value=''});
 }
+var saving=false,pendDup=null;
+function accNet(id){var a=S.acc.find(function(x){return x.id===id});return a?'ยอดสุทธิบัญชี '+a.name+' '+money(accBal(a).bal)+' บาท':''}
+function nbTail(id){var n=accNet(id);return n?' · '+n:''}
+function busyBtn(on){var b=$('sbtn');if(b){b.disabled=!!on;b.style.opacity=on?.6:1}}
+function findDups(o,ign){
+  var loc=S.tx.filter(function(t){return t.id!==ign&&t.date===o.date&&t.type===o.type&&t.acc===o.acc&&Math.abs(+t.amt-o.amt)<0.005});
+  var q='transactions?tx_date=eq.'+o.date+'&type=eq.'+o.type+'&account_id=eq.'+o.acc+'&amount=eq.'+o.amt+'&select=id,name'+(hasTime?',tx_time':'')+'&limit=20';
+  return api('GET',q).then(function(r){
+    (r||[]).forEach(function(x){if(x.id===ign)return;if(!loc.some(function(t){return t.id===x.id}))loc.push({id:x.id,name:x.name,time:(x.tx_time||'').slice(0,5)})});
+    return loc;
+  }).catch(function(e){if(e&&e.message==='NOAUTH')throw e;return loc});
+}
 function saveTx(){
+  if(saving)return;
   var o={date:$('fd').value,time:$('ftime').value||'',type:$('ft').value,ch:$('fc').value,acc:$('fa').value,name:$('fn').value.trim(),cat:$('fg').value,amt:parseFloat($('fm').value),note:$('fo').value.trim()};
   if(!o.date){toast('กรุณาเลือกวันที่');return}
   if(!o.name){toast('กรุณากรอกชื่อรายการ');return}
   if(!o.acc){toast('กรุณาเลือกบัญชี หากไม่มีให้เพิ่มบัญชีก่อน');return}
   if(!(o.amt>0)){toast('กรุณากรอกจำนวนเงินมากกว่า 0');return}
+  var old=editId?S.tx.find(function(x){return x.id===editId}):null;
+  var keyChanged=!old||old.date!==o.date||old.type!==o.type||old.acc!==o.acc||Math.abs(+old.amt-o.amt)>=0.005;
+  if(!keyChanged){commitTx(o);return}
+  saving=true;busyBtn(true);
+  findDups(o,editId).then(function(d){
+    saving=false;busyBtn(false);
+    if(d.length)askDup(o,d);else commitTx(o);
+  }).catch(function(e){saving=false;busyBtn(false);fail(e)});
+}
+function askDup(o,d){
+  pendDup=o;
+  var nm=function(x){return String(x||'').trim().toLowerCase()};
+  var rows=d.slice(0,5).map(function(t){
+    var tags=[];if(nm(t.name)===nm(o.name))tags.push('ชื่อเหมือนกัน');if(o.time&&t.time&&o.time===t.time)tags.push('เวลาเหมือนกัน');
+    return '<li><b>'+esc(t.name)+'</b>'+(t.time?' <span style="color:var(--mute)">'+t.time+' น.</span>':'')+(tags.length?' <span class="dtag">'+tags.join(' · ')+'</span>':'')+'</li>';
+  }).join('');
+  modal('<h3>⚠ รายการนี้อาจซ้ำ</h3><p>มีรายการ'+(o.type==='inc'?'รายรับ':'รายจ่าย')+' จำนวน <b>'+money(o.amt)+'</b> บาท ในบัญชี <b>'+esc(accName(o.acc))+'</b> วันที่ '+dth(o.date)+' อยู่แล้ว '+d.length+' รายการ</p><ul class="dupl">'+rows+(d.length>5?'<li>และอีก '+(d.length-5)+' รายการ</li>':'')+'</ul><p><b>ต้องการบันทึกรายการนี้ซ้ำอีกครั้งใช่หรือไม่?</b></p><div class="acts"><button class="btn o" onclick="pendDup=null;closeM()">ไม่บันทึก กลับไปตรวจสอบ</button><button class="btn" onclick="dupYes()">ยืนยัน บันทึกซ้ำ</button></div>');
+}
+function dupYes(){var o=pendDup;pendDup=null;closeM();if(o)commitTx(o)}
+function commitTx(o){
+  if(saving)return;
   var row={tx_date:o.date,type:o.type,name:o.name,category:o.cat,amount:o.amt,note:o.note,channel:o.ch,account_id:o.acc};
   if(hasTime)row.tx_time=o.time||null;
   var wasEdit=editId,imgs=formImgs.slice(),touched=imgTouched,p;
+  var oldT=wasEdit?S.tx.find(function(x){return x.id===wasEdit}):null,oldAcc=oldT?oldT.acc:null;
   var tid=wasEdit||uid();if(!wasEdit){o.id=tid;row.id=tid}
+  saving=true;busyBtn(true);
   var up=(touched||!wasEdit)&&imgs.length?putImgs(tid,imgs):Promise.resolve('');
   p=up.then(function(path){
     if(wasEdit){if(touched){row.image=path;var nv=parseImgVals(path);oldImgVals.forEach(function(v){if(nv.indexOf(v)<0)delStored(v)})}return api('PATCH','transactions?id=eq.'+wasEdit,row)}
@@ -703,10 +747,14 @@ function saveTx(){
   p.then(function(){
     if(wasEdit){var t=S.tx.find(function(x){return x.id===wasEdit});Object.assign(t,o);if(touched)t.hasImg=imgs.length>0}
     else{o.hasImg=imgs.length>0;S.tx.unshift(o)}
-    cache();toast(wasEdit?'แก้ไขรายการแล้ว':'บันทึกรายการแล้ว');if(!wasEdit&&slipRecv&&o.type==='inc')addRecvName(slipRecv);editId=null;formImgs=[];imgTouched=false;preset=o.ch;lastAcc=o.acc;slipRecv='';
+    cache();
+    var ac=S.acc.find(function(x){return x.id===o.acc}),net=accNet(o.acc),extra=(wasEdit&&oldAcc&&oldAcc!==o.acc)?' · '+accNet(oldAcc):'';
+    toast((wasEdit?'แก้ไขรายการแล้ว':'บันทึกรายการแล้ว')+(net?' · '+net:'')+extra,4500);
+    autoSnap('อัตโนมัติ','auto');
+    if(!wasEdit&&slipRecv&&o.type==='inc')addRecvName(slipRecv);editId=null;formImgs=[];imgTouched=false;preset=o.ch;lastAcc=o.acc;slipRecv='';
     if(wasEdit){goBack()}
-    else{savedMsg='<div class="okb"><span><b>✓ บันทึกแล้ว</b> '+esc(o.name)+' · <b class="'+(o.type==='inc'?'inc':'exp')+'">'+(o.type==='inc'?'+':'−')+money(o.amt)+'</b> บาท</span><a onclick="go(\'hist\')">ดูในประวัติ</a></div>';go('form')}
-  }).catch(fail);
+    else{savedMsg='<div class="okb"><span><b>✓ บันทึกแล้ว</b> '+esc(o.name)+' · <b class="'+(o.type==='inc'?'inc':'exp')+'">'+(o.type==='inc'?'+':'−')+money(o.amt)+'</b> บาท'+(ac?'<br>ยอดสุทธิบัญชี <b>'+esc(ac.name)+'</b> : <b>'+money(accBal(ac).bal)+'</b> บาท':'')+'</span><a onclick="go(\'hist\')">ดูในประวัติ</a></div>';go('form')}
+  }).catch(fail).then(function(){saving=false;busyBtn(false)});
 }
 
 /* ---------- สแกนสลิป (OCR ในเบราว์เซอร์) ---------- */
@@ -1160,6 +1208,110 @@ function expXLS(){
   var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,w1,'สรุปยอด');XLSX.utils.book_append_sheet(wb,w2,'รายการ');
   XLSX.writeFile(wb,'รายรับรายจ่าย_'+(E.ch==='all'?'ภาพรวม':E.ch)+'_'+today()+'.xlsx');
   toast('ส่งออก Excel แล้ว');
+}
+
+/* ---------- สำรองข้อมูล ---------- */
+var BKEY='ie_backups_v1',BFILE='ie_last_file_backup_v1',BMAX=6,rsData=null,bkRun=false;
+function bkList(){try{var a=JSON.parse(localStorage.getItem(BKEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+function bkStore(L){while(L.length){try{localStorage.setItem(BKEY,JSON.stringify(L));return true}catch(e){L.shift()}}return false}
+function snapData(){return{app:'ie-tracker-backup',v:1,at:new Date().toISOString(),shop:{name:S.shop.name},cats:S.cats||null,acc:S.acc,tx:S.tx}}
+/* mode: auto = ไม่เกิน 1 ครั้ง/6 ชม. · event = ไม่เกิน 1 ครั้ง/2 นาที (ก่อนลบ) · hard = ทุกครั้ง */
+function autoSnap(reason,mode){
+  try{
+    if(!S||!S.tx||(!S.tx.length&&!S.acc.length))return;
+    var L=bkList(),last=L[L.length-1],gap=last?Date.now()-new Date(last.at).getTime():1e12;
+    if(mode==='auto'&&gap<6*3600*1000)return;
+    if(mode==='event'&&gap<120000)return;
+    var d=snapData();d.reason=reason||'อัตโนมัติ';
+    L.push(d);while(L.length>BMAX)L.shift();
+    bkStore(L);
+  }catch(e){}
+}
+function bkStamp(iso){var d=new Date(iso);return dth(d.toLocaleDateString('sv-SE'))+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+' น.'}
+function bkLastFile(){try{return localStorage.getItem(BFILE)||''}catch(e){return''}}
+function bkNotice(){
+  if(!S||!S.tx||!S.tx.length)return'';
+  var l=bkLastFile(),days=l?Math.floor((Date.now()-new Date(l).getTime())/86400000):-1;
+  if(l&&days<7)return'';
+  return'<div class="wrnb"><span><b>เตือนสำรองข้อมูล</b> '+(l?'ผ่านมา '+days+' วันแล้วที่ยังไม่ได้ดาวน์โหลดไฟล์สำรอง':'ยังไม่เคยดาวน์โหลดไฟล์สำรองข้อมูลเก็บไว้')+'</span><a onclick="go(\'bak\')">ไปหน้าสำรองข้อมูล</a></div>';
+}
+function bkDownload(d,name){
+  var b=new Blob([JSON.stringify(d)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');
+  a.href=u;a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(function(){a.remove();URL.revokeObjectURL(u)},4000);
+}
+function bkFileName(iso){var d=new Date(iso||Date.now());return 'backup_income-expense_'+d.toLocaleDateString('sv-SE')+'_'+('0'+d.getHours()).slice(-2)+('0'+d.getMinutes()).slice(-2)+'.json'}
+function bkMsg(m){var el=$('bkmsg');if(el)el.textContent=m||''}
+function bkFile(){
+  if(bkRun)return;bkRun=true;bkMsg('กำลังดึงข้อมูลล่าสุดจากระบบ...');
+  pull().then(function(){
+    bkMsg('กำลังรวบรวมรูปแนบ...');
+    var d=snapData();d.shop={name:S.shop.name,logo:S.shop.logo};d.reason='ไฟล์สำรอง';d.img={};
+    return getAll('transactions?select=id,image&has_image=eq.true&order=id.asc').then(function(r){
+      r.forEach(function(x){if(x.image)d.img[x.id]=x.image});d.imgOk=true;return d;
+    }).catch(function(e){if(e&&e.message==='NOAUTH')throw e;d.imgOk=false;return d});
+  }).then(function(d){
+    bkDownload(d,bkFileName(d.at));
+    try{localStorage.setItem(BFILE,new Date().toISOString())}catch(e){}
+    autoSnap('ดาวน์โหลดไฟล์สำรอง','event');
+    toast('ดาวน์โหลดไฟล์สำรองแล้ว ('+d.tx.length+' รายการ)'+(d.imgOk?'':' · รูปแนบไม่ถูกรวมในไฟล์'),4500);
+    bkRun=false;if(view==='bak')rBak();
+  }).catch(function(e){bkRun=false;bkMsg('');fail(e)});
+}
+function rBak(){
+  var L=bkList().map(function(d,i){return{d:d,i:i}}).reverse(),lf=bkLastFile();
+  var rows=L.map(function(x){var d=x.d;return '<tr><td>'+bkStamp(d.at)+'</td><td>'+esc(d.reason||'')+'</td><td class="r">'+d.acc.length+'</td><td class="r">'+d.tx.length+'</td><td style="white-space:nowrap"><button class="btn o s" onclick="rsSnap('+x.i+')">กู้คืนจุดนี้</button> <button class="btn o s" onclick="bkSnapDl('+x.i+')">ดาวน์โหลด</button></td></tr>'}).join('')||'<tr><td colspan="5" class="empty">ยังไม่มีจุดสำรองอัตโนมัติ (จะสร้างให้เองเมื่อเปิดระบบและมีข้อมูล)</td></tr>';
+  $('main').innerHTML='<h1>สำรองข้อมูล</h1><p class="sub">ป้องกันข้อมูลหาย: ดาวน์โหลดไฟล์เก็บไว้เอง และมีจุดสำรองอัตโนมัติในเครื่องนี้</p>'+
+  '<div class="box" style="max-width:820px"><h2>1. ดาวน์โหลดไฟล์สำรอง</h2><p class="bkst">'+(lf?'ดาวน์โหลดล่าสุด: '+bkStamp(lf):'ยังไม่เคยดาวน์โหลดไฟล์สำรอง')+' · ข้อมูลตอนนี้: '+S.acc.length+' บัญชี, '+S.tx.length+' รายการ</p><p style="margin:0 0 12px">ไฟล์ .json มีบัญชี รายการทั้งหมด หมวดหมู่ และตำแหน่งรูปสลิป (ตัวรูปจริงยังอยู่ที่ที่เก็บรูป) แนะนำให้ดาวน์โหลดอย่างน้อยสัปดาห์ละครั้งและเก็บไว้ที่ Google Drive หรือในเครื่องอื่น</p><button class="btn" onclick="bkFile()">ดาวน์โหลดไฟล์สำรองตอนนี้</button><div id="bkmsg" class="bkst" style="margin-top:10px"></div></div>'+
+  '<div class="box" style="max-width:820px"><h2>2. จุดสำรองอัตโนมัติในเครื่องนี้</h2><p class="bkst">ระบบเก็บให้อัตโนมัติสูงสุด '+BMAX+' จุด (ทุก 6 ชั่วโมงที่ใช้งาน และก่อนลบรายการ/บัญชี/กู้คืน) เก็บในเบราว์เซอร์นี้ ไม่รวมรูป</p><div class="tw"><table><thead><tr><th>เวลา</th><th>สาเหตุ</th><th class="r">บัญชี</th><th class="r">รายการ</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>'+
+  '<div class="box" style="max-width:820px"><h2>3. กู้คืนจากไฟล์สำรอง</h2><p class="bkst">การกู้คืนจะ “เพิ่ม/อัปเดต” ข้อมูลตามไฟล์ ไม่ลบรายการอื่นที่มีอยู่ตอนนี้ และระบบจะสร้างจุดสำรองไว้ก่อนเสมอ</p><div class="f" style="max-width:360px"><input type="file" accept=".json,application/json" onchange="bkPick(this)"></div></div>';
+}
+function bkSnapDl(i){var d=bkList()[i];if(!d)return;bkDownload(d,bkFileName(d.at))}
+function bkPick(inp){
+  var f=inp.files&&inp.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(){var d=null;try{d=JSON.parse(r.result)}catch(e){}inp.value='';if(!d){toast('อ่านไฟล์ไม่ได้ กรุณาเลือกไฟล์ .json ที่สำรองจากระบบนี้');return}rsAsk(d)};
+  r.readAsText(f);
+}
+function rsSnap(i){var d=bkList()[i];if(d)rsAsk(d)}
+function rsAsk(d){
+  if(!(d&&d.app==='ie-tracker-backup'&&Array.isArray(d.acc)&&Array.isArray(d.tx))){toast('ไม่ใช่ไฟล์สำรองของระบบนี้');return}
+  rsData=d;
+  var have={};S.tx.forEach(function(t){have[t.id]=1});
+  var add=d.tx.filter(function(t){return !have[t.id]}).length,same=d.tx.length-add;
+  modal('<h3>ยืนยันการกู้คืนข้อมูล</h3><p>สำรองเมื่อ <b>'+(d.at?bkStamp(d.at):'-')+'</b><br>มี '+d.acc.length+' บัญชี, '+d.tx.length+' รายการ</p><ul class="dupl"><li>รายการที่ยังไม่มีในระบบ (จะเพิ่มให้): <b>'+add+'</b></li><li>รายการที่มีอยู่แล้ว (จะอัปเดตตามไฟล์): <b>'+same+'</b></li><li>ไม่มีการลบรายการอื่นที่มีอยู่ตอนนี้</li></ul><div class="acts"><button class="btn o" onclick="rsData=null;closeM()">ยกเลิก</button><button class="btn" onclick="rsRun()">ยืนยันกู้คืน</button></div>');
+}
+function rsChunk(a,n){var o=[];for(var i=0;i<a.length;i+=n)o.push(a.slice(i,i+n));return o}
+function rsUnion(a,b){var o=(a||[]).slice();(b||[]).forEach(function(x){if(o.indexOf(x)<0)o.push(x)});return o}
+function rsRun(){
+  var d=rsData;if(!d||bkRun)return;closeM();bkRun=true;
+  autoSnap('ก่อนกู้คืน','hard');
+  var okTx=0,skip=0,accs=d.acc.filter(function(a){return a&&a.id&&a.name}).map(function(a){return{id:a.id,channel:a.ch,name:a.name,opening_balance:+a.open||0}});
+  var withImg=[],noImg=[];
+  d.tx.forEach(function(t){
+    if(!t||!t.id||!/^\d{4}-\d{2}-\d{2}$/.test(t.date||'')||(t.type!=='inc'&&t.type!=='exp')||!t.acc||!(+t.amt>0)){skip++;return}
+    var row={id:t.id,tx_date:t.date,type:t.type,name:t.name||'',category:t.cat,amount:+t.amt,note:t.note||'',channel:t.ch,account_id:t.acc};
+    if(hasTime)row.tx_time=t.time||null;
+    var im=d.img&&d.img[t.id];if(im){row.image=im;withImg.push(row)}else noImg.push(row);okTx++;
+  });
+  var jobs=[];
+  rsChunk(accs,100).forEach(function(c){jobs.push(['accounts',c])});
+  rsChunk(noImg,200).forEach(function(c){jobs.push(['transactions',c])});
+  rsChunk(withImg,10).forEach(function(c){jobs.push(['transactions',c])});
+  var H={Prefer:'resolution=merge-duplicates,return=minimal'},n=0;
+  function step(){
+    if(n>=jobs.length)return Promise.resolve();
+    bkMsg('กำลังกู้คืน '+(n+1)+' / '+jobs.length+' ...');
+    var j=jobs[n++];return api('POST',j[0]+'?on_conflict=id',j[1],H).then(step);
+  }
+  step().then(function(){
+    if(!d.cats)return;
+    var c=S.cats||{},m={inc:rsUnion(INCC,d.cats.inc),exp:rsUnion(EXPC,d.cats.exp),rn:rsUnion(c.rn,d.cats.rn),nt:rsUnion(c.nt,d.cats.nt)};
+    var nm=S.shop.name||(d.shop&&d.shop.name)||'';
+    return api('POST','shop_settings?on_conflict=owner_id',{owner_id:SB.owner,name:nm,logo:S.shop.logo||'',categories:m},{Prefer:'resolution=merge-duplicates,return=minimal'});
+  }).then(function(){return pull()}).then(function(){
+    bkRun=false;rsData=null;toast('กู้คืนข้อมูลสำเร็จ '+okTx+' รายการ'+(skip?' (ข้าม '+skip+' รายการที่ข้อมูลไม่ครบ)':''),5000);render();
+  }).catch(function(e){bkRun=false;bkMsg('');fail(e)});
 }
 
 /* ---------- เริ่มต้น ---------- */
